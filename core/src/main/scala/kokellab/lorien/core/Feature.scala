@@ -4,9 +4,9 @@ import Specializable._
 import breeze.linalg._
 
 /**
-  * A Feature maps a time-series of bitmap matrices to an output tensor of floats.
+  * A Feature maps a time-series of bitmap matrices to an output tensor of type V.
   */
-trait Feature[C <: ColorValue[_], @specialized(Byte, Int, Float, Double) V] {
+trait Feature[C <: ColorValue[_], @specialized(Byte, Int, Float, Double) V <: Numeric[V]] {
 
 	def name: String
 
@@ -19,6 +19,8 @@ trait Feature[C <: ColorValue[_], @specialized(Byte, Int, Float, Double) V] {
 	def calculate(input: DenseVector[DenseMatrix[C]]): Tensor[Int, V]
 
 }
+
+trait GrayscaleFloatFeature extends Feature[Grayscale, Float]
 
 trait GrayscaleTimeDependentVectorFeature extends Feature[Grayscale, Float] {
 	override def tensorDef: TensorDef = TensorDef.timeDependentVector

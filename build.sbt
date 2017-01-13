@@ -19,6 +19,7 @@ lazy val commonSettings = Seq(
 		//"org.apache.spark" %% "spark-mllib" % "2.0.1",
 		//"com.github.haifengl" % "smile-scala_2.12" % "1.2.0",
 		"org.scalanlp" %% "breeze" % "0.12",
+		"org.spire-math" %% "spire" % "0.13.0",
 		"com.sksamuel.scrimage" %% "scrimage-core" % "2.1.7",
 		"com.squants"  %% "squants"  % "0.6.2",
 		"com.google.guava" % "guava" % "20.0",
