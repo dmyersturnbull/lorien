@@ -35,7 +35,7 @@ trait DimensionalityConstraints extends (Int => Boolean) with TensorDef {
 	def matchesFrames(dimension: Int): Boolean = false
 }
 
-case class TensorOrder(n: Int) {
+class TensorOrder(val n: Int) {
 	require(n > -1)
 }
 

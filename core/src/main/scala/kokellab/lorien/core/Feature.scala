@@ -6,7 +6,7 @@ import breeze.linalg._
 /**
   * A Feature maps a time-series of bitmap matrices to an output tensor of type V.
   */
-trait Feature[C <: ColorValue[_], @specialized(Byte, Int, Float, Double) V <: Numeric[V]] {
+trait Feature[T, D <: BitDepth, C <: ColorValue[T, D], @specialized(Byte, Int, Float, Double) V] {
 
 	def name: String
 
@@ -20,16 +20,12 @@ trait Feature[C <: ColorValue[_], @specialized(Byte, Int, Float, Double) V <: Nu
 
 }
 
-trait GrayscaleFloatFeature extends Feature[Grayscale, Float]
+trait GrayscaleFloatFeature[T, D <: BitDepth] extends Feature[T, D, Grayscale[T, D], Float]
 
-trait GrayscaleTimeDependentVectorFeature extends Feature[Grayscale, Float] {
+trait GrayscaleTimeDependentVectorFeatureU8 extends GrayscaleFloatFeature[Byte, U8] {
 	override def tensorDef: TensorDef = TensorDef.timeDependentVector
 }
 
-trait GrayscaleTimeIndependentVectorFeature extends Feature[Grayscale, Float] {
+trait GrayscaleTimeIndependentVectorFeatureU8 extends GrayscaleFloatFeature[Byte, U8] {
 	override def tensorDef: TensorDef = TensorDef.freeVector
-}
-
-trait GrayscaleScalarFeature extends Feature[Grayscale, Float] {
-	override def tensorDef: TensorDef = TensorDef.scalar
 }
