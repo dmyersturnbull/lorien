@@ -4,7 +4,7 @@ description := "Master of dreams and visions; transforms videos into feature vec
 
 lazy val commonSettings = Seq(
 	organization := "com.github.kokellab",
-	version := "0.0.1",
+	version := "0.1-SNAPSHOT",
 	scalaVersion := "2.11.8",
 	javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:all"),
 	scalacOptions ++= Seq("-unchecked", "-deprecation"),

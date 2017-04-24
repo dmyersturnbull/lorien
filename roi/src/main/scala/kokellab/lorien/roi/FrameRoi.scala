@@ -15,15 +15,16 @@ case class FrameRoi(roi: Roi, frame: Int)
   */
 class FrameRoiWalker(val files: Stream[Path])(val rois: Seq[Roi]) {
 
-	val frameNames: Stream[String] = files map (_.getName(-1).normalize.toString)
-	private val tempDirectory = Files.createTempDirectory(ZonedDateTime.now.format(DateTimeFormatter.ofPattern("yyyy-MM-ddTHHmmss.SSS")))
+	files foreach println
+	val frameNames: Stream[String] = files map (_.getFileName.toString)
+	private val tempDirectory = Files.createTempDirectory(ZonedDateTime.now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HHmmss.SSS")))
 
 	for (roi <- rois) tempDirectory.resolve(roi.coordinateString).toFile.mkdir()
 	for (inputFile <- files) {
 
 		val extractor = new RoiExtractor(inputFile)
 		for (roi <- rois) {
-			val outputFile = tempDirectory.resolve(roi.coordinateString).resolve(inputFile.getName(-1))
+			val outputFile = tempDirectory.resolve(roi.coordinateString).resolve(inputFile.getFileName.toString)
 			Files.write(outputFile, extractor(roi))
 		}
 	}
@@ -36,9 +37,18 @@ class FrameRoiWalker(val files: Stream[Path])(val rois: Seq[Roi]) {
 }
 
 object FrameRoiWalker {
-	def fromDirectory(directory: Path)(rois: Seq[Roi]) = new FrameRoiWalker(
-		Files.list(directory).iterator().asScala.toStream
-			filter (p => p.toString.endsWith(".png") || p.toString.endsWith(".jpg"))
-			sortBy (_.normalize().toString)
+
+	def inDirectory(directory: Path)(rois: Seq[Roi]): FrameRoiWalker = filteredAndSorted(
+		Files.list(directory).iterator().asScala.toStream, rois
+	)
+
+	def inDirectoryRecursive(directory: Path)(rois: Seq[Roi]): FrameRoiWalker = filteredAndSorted(
+		Files.walk(directory).iterator().asScala.toStream, rois
+	)
+
+	def filteredAndSorted(stream: Stream[Path], rois: Seq[Roi]): FrameRoiWalker = new FrameRoiWalker(
+		stream
+		filter (p => p.toString.endsWith(".png") || p.toString.endsWith(".jpg"))
+		sortBy (_.normalize().toString)
 	)(rois)
 }

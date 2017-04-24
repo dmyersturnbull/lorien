@@ -1,7 +1,6 @@
 package kokellab.lorien.roi
 
 import com.sksamuel.scrimage.Image
-import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
 import scala.io.Source
@@ -10,7 +9,6 @@ import scala.io.Source
 class RoiExtractor(bytes: Array[Byte]) extends (Roi => Array[Byte]) {
 
 	def this(file: Path) = this(Files.readAllBytes(file))
-	def this(file: File) = this(Files.readAllBytes(file.toPath))
 
 	val image = Image(bytes)
 

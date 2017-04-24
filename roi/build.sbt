@@ -1,1 +1,1 @@
-name := "lorien-check"
+name := "lorien-roi"
