@@ -16,7 +16,7 @@ trait Feature[D, C <: ColorValue[D], @specialized(Byte, Int, Float, Double) V] {
 
 	def tensorDef: TensorDef
 
-	def calculate(input: DenseVector[DenseMatrix[C]]): Tensor[Int, V]
+	def calculate(input: Iterable[DenseMatrix[C]]): Tensor[Int, V]
 
 }
 

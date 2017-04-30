@@ -4,7 +4,7 @@ description := "Master of dreams and visions; transforms videos into feature vec
 
 lazy val commonSettings = Seq(
 	organization := "com.github.kokellab",
-	version := "0.1-SNAPSHOT",
+	version := "0.1.0-SNAPSHOT",
 	scalaVersion := "2.11.8",
 	javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:all"),
 	scalacOptions ++= Seq("-unchecked", "-deprecation"),
@@ -44,24 +44,28 @@ lazy val commonSettings = Seq(
 lazy val core = project.
 		settings(commonSettings: _*)
 
-lazy val simple = project.
-		dependsOn(core).
-		settings(commonSettings: _*)
-
 lazy val roi = project.
 		dependsOn(core).
 		settings(commonSettings: _*)
 
+lazy val simple = project.
+		dependsOn(core).
+		dependsOn(roi).
+		settings(commonSettings: _*)
+
 lazy val check = project.
 		dependsOn(core).
+	dependsOn(roi).
 		settings(commonSettings: _*)
 
 lazy val train = project.
 		dependsOn(core).
+	dependsOn(roi).
 		settings(commonSettings: _*)
 
 lazy val feed = project.
 		dependsOn(core).
+	dependsOn(roi).
 		settings(commonSettings: _*)
 
 lazy val root = (project in file(".")).
