@@ -10,12 +10,19 @@ class FrameRoiTest extends PropSpec with GeneratorDrivenPropertyChecks with Matc
 
 	property("test") {
 		val rois = Seq(
-			Roi(12, 106, 12, 106),
-			Roi(12, 106, 109, 203),
-			Roi(12, 106, 206, 300)
+			Roi(12, 106, 12, 106-4),
+			Roi(12, 106, 109, 203-4),
+			Roi(12, 106, 206, 300-4)
 		)
-		val walker = FrameRoiWalker.inDirectoryRecursive(Paths.get("/run/media/dmyerstu/Kokel_1Tb/2016-11-Reid_Kinser/rawData/man01"))(rois)
-		val got = walker.iterator(rois(0)) map bytesToGrayscaleU8
+		val walker = FrameRoiWalker.inDirectoryRecursive(Paths.get("roi/src/test/resources/frames"))(rois)
+		for (roi <- rois) {
+			val wellFrames = (walker.iterator(roi) map (bytes => RichImage.of(bytes))).toList
+			wellFrames.size should equal (3)
+			for (wellFrame <- wellFrames) {
+				wellFrame.height should equal (94-4)
+				wellFrame.width should equal (94)
+			}
+		}
 	}
 
 }

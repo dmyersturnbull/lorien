@@ -1,11 +1,12 @@
 package kokellab.lorien.simple
 
-import breeze.linalg.{DenseMatrix, DenseVector, Tensor, _}
-import kokellab.lorien.core.{GrayscaleU8, GrayscaleTimeDependentVectorFeatureU8}
+import breeze.linalg._
+import breeze.numerics.abs
+import com.sksamuel.scrimage.Image
+import kokellab.lorien.core.RichImage.RichGrayscaleU8Image
+import kokellab.lorien.core.FreeVectorFeature
 
-import Specializable._
-
-class OriginalMiFeature extends GrayscaleTimeDependentVectorFeatureU8 {
+class OriginalMiFeature extends FreeVectorFeature[Int] {
 
 	override def name: String = "Motion Index"
 
@@ -13,12 +14,9 @@ class OriginalMiFeature extends GrayscaleTimeDependentVectorFeatureU8 {
 
 	override def description: String = "Original definition of motion index; sums the difference in pixel intensities over each well for consecutive frames. MI at frame 0 is defined as 0."
 
-	def calculate(input: Iterable[DenseMatrix[GrayscaleU8]]): DenseVector[Float] = {
-		// Breeze sum isn't clever enough to infer the type Float
-		def sumDiff(a: DenseMatrix[GrayscaleU8], b: DenseMatrix[GrayscaleU8]): Float = sum {
-			(a.map(_.head.toFloat) :- b.map(_.head.toFloat)) map math.abs
-		}
-		val iter: Iterator[Float] = input.sliding(2, 1) map (f => sumDiff(f.head, f.last))
+	def apply(input: Iterable[Image]): DenseVector[Int] = {
+		val riches = input.map(x => new RichGrayscaleU8Image(x).toGrayscale)
+		val iter: Iterator[Int] = riches.sliding(2, 1) map (f => sum(abs(f.head - f.last)))
 		DenseVector(iter.toArray)
 	}
 }

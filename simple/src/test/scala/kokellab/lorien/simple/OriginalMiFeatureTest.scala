@@ -1,17 +1,15 @@
 package kokellab.lorien.simple
 
 
-import java.io.ByteArrayInputStream
 import java.nio.file.Paths
 
 import breeze.linalg.{DenseMatrix, DenseVector}
 import com.sksamuel.scrimage.Image
-import kokellab.lorien.core.GrayscaleU8
+import kokellab.lorien.core.RichImage
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
-import org.scalatest.prop.{GeneratorDrivenPropertyChecks, PropertyChecks}
+import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, PropSpec}
-import kokellab.lorien.core.{readImageAsGrayscaleU8}
 
 import scala.io.Source
 
@@ -41,17 +39,14 @@ class OriginalMiFeatureTest extends PropSpec with GeneratorDrivenPropertyChecks 
 	private val halfByteGen = Arbitrary.arbByte.arbitrary retryUntil (b => b < 64 && b > -64)
 
 	property("Test") {
-		val images = DenseVector(Seq(
-			readImageAsGrayscaleU8(Paths.get("/run/media/dmyerstu/Kokel_1Tb/2016-11-Reid_Kinser/rawData/DR_2x_full/2016-10-19-DR_2x_full-S01-3-1852/2016-10-19-DR_2x_full-S01-3-1852-190306-softTap1-JPGs/2016-10-19-DR_2x_full-S01-3-1852-190306-softTap1-000001.jpg")),
-			readImageAsGrayscaleU8(Paths.get("/run/media/dmyerstu/Kokel_1Tb/2016-11-Reid_Kinser/rawData/DR_2x_full/2016-10-19-DR_2x_full-S01-3-1852/2016-10-19-DR_2x_full-S01-3-1852-190306-softTap1-JPGs/2016-10-19-DR_2x_full-S01-3-1852-190306-softTap1-000001.jpg")),
-			readImageAsGrayscaleU8(Paths.get("/run/media/dmyerstu/Kokel_1Tb/2016-11-Reid_Kinser/rawData/DR_2x_full/2016-10-19-DR_2x_full-S01-3-1852/2016-10-19-DR_2x_full-S01-3-1852-190306-softTap1-JPGs/2016-10-19-DR_2x_full-S01-3-1852-190306-softTap1-000002.jpg")),
-			readImageAsGrayscaleU8(Paths.get("/run/media/dmyerstu/Kokel_1Tb/2016-11-Reid_Kinser/rawData/DR_2x_full/2016-10-19-DR_2x_full-S01-3-1852/2016-10-19-DR_2x_full-S01-3-1852-190306-softTap1-JPGs/2016-10-19-DR_2x_full-S01-3-1852-190306-softTap1-000003.jpg")),
-			readImageAsGrayscaleU8(Paths.get("/run/media/dmyerstu/Kokel_1Tb/2016-11-Reid_Kinser/rawData/DR_2x_full/2016-10-19-DR_2x_full-S01-3-1852/2016-10-19-DR_2x_full-S01-3-1852-190306-softTap1-JPGs/2016-10-19-DR_2x_full-S01-3-1852-190306-softTap1-000003.jpg")),
-			readImageAsGrayscaleU8(Paths.get("/run/media/dmyerstu/Kokel_1Tb/2016-11-Reid_Kinser/rawData/DR_2x_full/2016-10-19-DR_2x_full-S01-3-1852/2016-10-19-DR_2x_full-S01-3-1852-190306-softTap1-JPGs/2016-10-19-DR_2x_full-S01-3-1852-190306-softTap1-000004.jpg")),
-			readImageAsGrayscaleU8(Paths.get("/run/media/dmyerstu/Kokel_1Tb/2016-11-Reid_Kinser/rawData/DR_2x_full/2016-10-19-DR_2x_full-S01-3-1852/2016-10-19-DR_2x_full-S01-3-1852-190306-softTap1-JPGs/2016-10-19-DR_2x_full-S01-3-1852-190306-softTap1-000004.jpg"))
-		):_*)
+		val images = Seq(
+			RichImage.of(Paths.get("roi/src/test/resources/frames/2017-04-04-man01-S01-1-1913-195923-background-000002.jpg")),
+			RichImage.of(Paths.get("roi/src/test/resources/frames/2017-04-04-man01-S01-1-1913-195923-background-000003.jpg")),
+			RichImage.of(Paths.get("roi/src/test/resources/frames/2017-04-04-man01-S01-1-1913-195923-background-000003.jpg")),
+			RichImage.of(Paths.get("roi/src/test/resources/frames/2017-04-04-man01-S01-1-1913-195923-background-000004.jpg"))
+		)
 		val feature = new OriginalMiFeature
-		val tensor: DenseVector[Float] = feature.calculate(images)
+		val tensor: DenseVector[Int] = feature(images)
 		for (v <- tensor) println(v)
 	}
 
