@@ -5,7 +5,8 @@ import java.nio.file.Paths
 
 import breeze.linalg.{DenseMatrix, DenseVector}
 import com.sksamuel.scrimage.Image
-import kokellab.lorien.core.RichImage
+import scala.language.implicitConversions
+import kokellab.lorien.core.{RichImages, Roi}
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
@@ -40,11 +41,11 @@ class OriginalMiFeatureTest extends PropSpec with GeneratorDrivenPropertyChecks 
 
 	property("Test") {
 		val images = Seq(
-			RichImage.of(Paths.get("roi/src/test/resources/frames/2017-04-04-man01-S01-1-1913-195923-background-000002.jpg")),
-			RichImage.of(Paths.get("roi/src/test/resources/frames/2017-04-04-man01-S01-1-1913-195923-background-000003.jpg")),
-			RichImage.of(Paths.get("roi/src/test/resources/frames/2017-04-04-man01-S01-1-1913-195923-background-000003.jpg")),
-			RichImage.of(Paths.get("roi/src/test/resources/frames/2017-04-04-man01-S01-1-1913-195923-background-000004.jpg"))
-		)
+			RichImages.of(Paths.get("roi/src/test/resources/frames/2017-04-04-man01-S01-1-1913-195923-background-000002.jpg")),
+			RichImages.of(Paths.get("roi/src/test/resources/frames/2017-04-04-man01-S01-1-1913-195923-background-000003.jpg")),
+			RichImages.of(Paths.get("roi/src/test/resources/frames/2017-04-04-man01-S01-1-1913-195923-background-000003.jpg")),
+			RichImages.of(Paths.get("roi/src/test/resources/frames/2017-04-04-man01-S01-1-1913-195923-background-000004.jpg"))
+		) map (_.crop(new Roi(1, 95, 1, 95)))
 		val feature = new OriginalMiFeature
 		val tensor: DenseVector[Int] = feature(images)
 		for (v <- tensor) println(v)

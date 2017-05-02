@@ -7,8 +7,8 @@ import scala.language.implicitConversions
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
-import kokellab.lorien.core.RichImage.RichGrayscaleU8Image
-import kokellab.lorien.core.{RichImage, Roi}
+import kokellab.lorien.core.{RichImages, Roi}
+import kokellab.lorien.core.RichImages.RichImage
 
 import scala.language.implicitConversions
 
@@ -27,16 +27,18 @@ class FrameRoiWalker(val files: Stream[Path])(val rois: Seq[Roi]) {
 	for (roi <- rois) tempDirectory.resolve(roi.coordinateString).toFile.mkdir()
 	for (inputFile <- files) {
 
-		val image: RichGrayscaleU8Image = RichImage.of(inputFile)
+		val image: RichImage = RichImages.of(inputFile)
 		for (roi <- rois) {
 			val outputFile = tempDirectory.resolve(roi.coordinateString).resolve(inputFile.getFileName.toString)
 			image.crop(roi).write(outputFile)
 		}
 	}
 
-	def iterator(roi: Roi): TraversableOnce[Array[Byte]] = for (frame <- frameNames) yield {
-		val outputFile = tempDirectory.resolve(roi.coordinateString).resolve(frame)
-		Files.readAllBytes(outputFile)
+	def iterator(roi: Roi): Iterator[RichImage] = {
+		for (frame <- frameNames.iterator) yield { // I think it's not necessary to convert it to an iterator
+			val outputFile = tempDirectory.resolve(roi.coordinateString).resolve(frame)
+			RichImages.of(outputFile)
+		}
 	}
 
 }
@@ -56,4 +58,14 @@ object FrameRoiWalker {
 		filter (p => p.toString.endsWith(".png") || p.toString.endsWith(".jpg"))
 		sortBy (_.normalize().toString)
 	)(rois)
+}
+
+object WholeFrameWalker {
+
+	def inDirectory(directory: Path): Iterator[RichImage] =
+		Files.list(directory).iterator().asScala map RichImages.of
+
+	def inDirectoryRecursive(directory: Path): Iterator[RichImage] =
+		Files.walk(directory).iterator().asScala map RichImages.of
+
 }

@@ -2,6 +2,7 @@ package kokellab.lorien.roi
 
 import java.nio.file.Paths
 
+import scala.language.implicitConversions
 import kokellab.lorien.core._
 import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
@@ -16,11 +17,11 @@ class FrameRoiTest extends PropSpec with GeneratorDrivenPropertyChecks with Matc
 		)
 		val walker = FrameRoiWalker.inDirectoryRecursive(Paths.get("roi/src/test/resources/frames"))(rois)
 		for (roi <- rois) {
-			val wellFrames = (walker.iterator(roi) map (bytes => RichImage.of(bytes))).toList
+			val wellFrames = walker.iterator(roi).toList
 			wellFrames.size should equal (3)
 			for (wellFrame <- wellFrames) {
-				wellFrame.height should equal (94-4)
-				wellFrame.width should equal (94)
+				wellFrame.image.height should equal (94-4)
+				wellFrame.image.width should equal (94)
 			}
 		}
 	}

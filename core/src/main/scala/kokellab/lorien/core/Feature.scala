@@ -2,7 +2,7 @@ package kokellab.lorien.core
 
 import Specializable._
 import breeze.linalg._
-import com.sksamuel.scrimage.Image
+import kokellab.lorien.core.RichImages.RichImage
 
 import scala.language.implicitConversions
 import kokellab.valar.core.{exec, loadDb}
@@ -25,13 +25,13 @@ trait Feature[@specialized(Byte, Int, Float, Double) V] {
 
 	def tensorDef: TensorDef
 
-	def apply(input: Iterable[Image]): Tensor[Int, V]
+	def apply(input: Iterable[RichImage]): Tensor[Int, V]
 
 	def apply(plateRun: PlateRunsRow, roi: RoisRow): Tensor[Int, V] =
 		apply {
 			exec((
 				FrameImages filter (_.plateRunId === plateRun.id) sortBy (_.frame)
-			).result) map (frame => RichImage.of(frame, roi))
+			).result) map (frame => RichImages.of(frame, roi))
 		}
 }
 
