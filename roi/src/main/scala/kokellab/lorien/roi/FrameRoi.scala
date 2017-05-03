@@ -63,9 +63,18 @@ object FrameRoiWalker {
 object WholeFrameWalker {
 
 	def inDirectory(directory: Path): Iterator[RichImage] =
-		Files.list(directory).iterator().asScala map RichImages.of
+		filteredAndSorted(
+			Files.list(directory).iterator().asScala.toStream
+		).iterator map RichImages.of
 
 	def inDirectoryRecursive(directory: Path): Iterator[RichImage] =
-		Files.walk(directory).iterator().asScala map RichImages.of
+		filteredAndSorted(
+			Files.walk(directory).iterator().asScala.toStream
+		).iterator map RichImages.of
 
+	def filteredAndSorted(stream: Stream[Path]): Stream[Path] = (
+		stream
+			filter (p => p.toString.endsWith(".png") || p.toString.endsWith(".jpg"))
+			sortBy (_.normalize().toString)
+	)
 }

@@ -6,6 +6,7 @@ import scala.language.implicitConversions
 import breeze.linalg.DenseMatrix
 import com.sksamuel.scrimage.{Image, Pixel}
 import breeze.linalg._
+import com.sksamuel.scrimage.composite.AverageComposite
 import kokellab.utils.core.blobToBytes
 import kokellab.valar.core.loadDb
 
@@ -15,6 +16,8 @@ object RichImages {
 
 	import kokellab.valar.core.Tables._
 	import kokellab.valar.core.Tables.profile.api._
+
+	implicit def richImageToImage(richImage: RichImage): Image = richImage.image
 
 	implicit class RichImage(val image: Image) {
 
@@ -65,5 +68,9 @@ object RichImages {
 	def of(frame: FrameImagesRow, roi: RoisRow): RichImage = RichImage(Image(blobToBytes(frame.image))).crop(roi)
 
 	def apply(image: Image) = RichImage(image)
+
+//	def mean(images: RichImage*): RichImage = {
+//		images.head.composite(new AverageComposite(1f), images.head)
+//	}
 
 }

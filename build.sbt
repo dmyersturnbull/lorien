@@ -23,6 +23,7 @@ lazy val commonSettings = Seq(
 		"org.bytedeco" % "javacv-platform" % "1.3.2",
 		"org.spire-math" %% "spire" % "0.13.0",
 		"com.sksamuel.scrimage" %% "scrimage-core" % "2.1.8",
+		"com.sksamuel.scrimage" %% "scrimage-filters" % "2.1.8",
 		"com.squants"  %% "squants"  % "0.6.2",
 		"org.boofcv" % "core" % "0.26",
 		"com.google.guava" % "guava" % "21.0",
