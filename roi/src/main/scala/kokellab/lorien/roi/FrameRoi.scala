@@ -45,36 +45,42 @@ class FrameRoiWalker(val files: Stream[Path])(val rois: Seq[Roi]) {
 
 object FrameRoiWalker {
 
-	def inDirectory(directory: Path)(rois: Seq[Roi]): FrameRoiWalker = filteredAndSorted(
-		Files.list(directory).iterator().asScala.toStream, rois
+	def inDirectory(directory: Path, filenameExtensions: Set[String] = Set(".png", ".jpg", ".jpeg"))(rois: Seq[Roi]): FrameRoiWalker = filteredAndSorted(
+		Files.list(directory).iterator().asScala.toStream,
+		rois,
+		filenameExtensions
 	)
 
-	def inDirectoryRecursive(directory: Path)(rois: Seq[Roi]): FrameRoiWalker = filteredAndSorted(
-		Files.walk(directory).iterator().asScala.toStream, rois
+	def inDirectoryRecursive(directory: Path, filenameExtensions: Set[String] = Set(".png", ".jpg", ".jpeg"))(rois: Seq[Roi]): FrameRoiWalker = filteredAndSorted(
+		Files.walk(directory).iterator().asScala.toStream,
+		rois,
+		filenameExtensions
 	)
 
-	def filteredAndSorted(stream: Stream[Path], rois: Seq[Roi]): FrameRoiWalker = new FrameRoiWalker(
+	def filteredAndSorted(stream: Stream[Path], rois: Seq[Roi], filenameExtensions: Set[String] = Set(".png", ".jpg", ".jpeg")): FrameRoiWalker = new FrameRoiWalker(
 		stream
-		filter (p => p.toString.endsWith(".png") || p.toString.endsWith(".jpg"))
+			filter (p => filenameExtensions exists (p.toString.endsWith(_)))
 		sortBy (_.normalize().toString)
 	)(rois)
 }
 
 object WholeFrameWalker {
 
-	def inDirectory(directory: Path): Iterator[RichImage] =
+	def inDirectory(directory: Path, filenameExtensions: Set[String] = Set(".png", ".jpg", ".jpeg")): Iterator[RichImage] =
 		filteredAndSorted(
-			Files.list(directory).iterator().asScala.toStream
+			Files.list(directory).iterator().asScala.toStream,
+			filenameExtensions
 		).iterator map RichImages.of
 
-	def inDirectoryRecursive(directory: Path): Iterator[RichImage] =
+	def inDirectoryRecursive(directory: Path, filenameExtensions: Set[String] = Set(".png", ".jpg", ".jpeg")): Iterator[RichImage] =
 		filteredAndSorted(
-			Files.walk(directory).iterator().asScala.toStream
+			Files.walk(directory).iterator().asScala.toStream,
+			filenameExtensions
 		).iterator map RichImages.of
 
-	def filteredAndSorted(stream: Stream[Path]): Stream[Path] = (
+	def filteredAndSorted(stream: Stream[Path], filenameExtensions: Set[String] = Set(".png", ".jpg", ".jpeg")): Stream[Path] = (
 		stream
-			filter (p => p.toString.endsWith(".png") || p.toString.endsWith(".jpg"))
+			filter (p => filenameExtensions exists (p.toString.endsWith(_)))
 			sortBy (_.normalize().toString)
 	)
 }
