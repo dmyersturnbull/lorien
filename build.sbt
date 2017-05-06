@@ -5,7 +5,7 @@ description := "Master of dreams and visions; transforms videos into feature vec
 lazy val commonSettings = Seq(
 	organization := "com.github.kokellab",
 	version := "0.1.0-SNAPSHOT",
-	scalaVersion := "2.11.8",
+	scalaVersion := "2.12.2",
 	javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:all"),
 	scalacOptions ++= Seq("-unchecked", "-deprecation"),
 	testOptions in Test += Tests.Argument("-oF"),
@@ -19,21 +19,21 @@ lazy val commonSettings = Seq(
 		//"org.apache.spark" %% "spark-mllib" % "2.0.1",
 		//"com.github.haifengl" % "smile-scala_2.12" % "1.2.0",
 		"org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0",
-		"org.scalanlp" %% "breeze" % "0.12",
+		"org.scalanlp" %% "breeze" % "0.13.1",
 		"org.bytedeco" % "javacv-platform" % "1.3.2",
 		"org.spire-math" %% "spire" % "0.13.0",
 		"com.sksamuel.scrimage" %% "scrimage-core" % "2.1.8",
 		"com.sksamuel.scrimage" %% "scrimage-filters" % "2.1.8",
-		"com.squants"  %% "squants"  % "0.6.2",
+		"org.typelevel"  %% "squants"  % "1.2.0",
 		"org.boofcv" % "core" % "0.26",
 		"com.google.guava" % "guava" % "21.0",
-		"com.typesafe.slick" %% "slick" % "3.1.1",
-		"org.slf4j" % "slf4j-api" % "1.7.21",
+		"com.typesafe.slick" %% "slick" % "3.2.0",
+		"org.slf4j" % "slf4j-api" % "1.7.25",
 		"com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
-		"org.scalatest" %% "scalatest" % "3.0.0" % "test",
-		"org.scalactic" %% "scalactic" % "3.0.0" % "test",
-		"org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-		"org.scalamock" %% "scalamock-scalatest-support" % "3.2.2" % "test"
+		"org.scalatest" %% "scalatest" % "3.0.1" % "test",
+		"org.scalactic" %% "scalactic" % "3.0.1" % "test",
+		"org.scalacheck" %% "scalacheck" % "1.13.5" % "test",
+		"org.scalamock" %% "scalamock-scalatest-support" % "3.5.0" % "test"
 	) map (_.exclude("log4j", "log4j")) map (_.exclude("org.slf4j", "slf4j-log4j12")),
 	pomExtra :=
 		<issueManagement>

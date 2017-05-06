@@ -56,21 +56,11 @@ object RichImages {
 
 	}
 
-//	implicit class RichGrayscaleU8Image(image: Image) extends RichImage(image) {
-//		def toGrayscaleU8: DenseMatrix[GrayscaleU8] = {
-//			grays.map(x => new GrayscaleU8(x.toByte))
-//		}
-//	}
-
 	def of(path: Path): RichImage = RichImage(Image(Files.readAllBytes(path)))
 	def of(bytes: Array[Byte]): RichImage = RichImage(Image(bytes))
 	def of(frame: FrameImagesRow): RichImage = RichImage(Image(blobToBytes(frame.image)))
 	def of(frame: FrameImagesRow, roi: RoisRow): RichImage = RichImage(Image(blobToBytes(frame.image))).crop(roi)
 
 	def apply(image: Image) = RichImage(image)
-
-//	def mean(images: RichImage*): RichImage = {
-//		images.head.composite(new AverageComposite(1f), images.head)
-//	}
 
 }
