@@ -1,15 +1,15 @@
-name := "lorien"
+name := "thorondor"
 
-description := "Master of dreams and visions; transforms videos into feature vectors"
+description := "Thorondor transforms video data into useful features and analysis."
 
 lazy val commonSettings = Seq(
 	organization := "com.github.kokellab",
-	version := "0.1.0-SNAPSHOT",
+	version := "0.2.0-SNAPSHOT",
 	scalaVersion := "2.12.2",
 	javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:all"),
 	scalacOptions ++= Seq("-unchecked", "-deprecation"),
 	testOptions in Test += Tests.Argument("-oF"),
-	homepage := Some(url("https://github.com/kokellab/lorien")),
+	homepage := Some(url("https://github.com/kokellab/thorondor")),
 	developers := List(Developer("dmyersturnbull", "Douglas Myers-Turnbull", "dmyersturnbull@kokellab.com", url("https://github.com/dmyersturnbull"))),
 	startYear := Some(2016),
 	scmInfo := Some(ScmInfo(url("https://github.com/kokellab/lorien"), "https://github.com/kokellab/lorien.git")),
@@ -45,30 +45,14 @@ lazy val commonSettings = Seq(
 lazy val core = project.
 		settings(commonSettings: _*)
 
+lazy val simple = project.
+	dependsOn(core).
+	settings(commonSettings: _*)
+
 lazy val roi = project.
 		dependsOn(core).
 		settings(commonSettings: _*)
 
-lazy val simple = project.
-		dependsOn(core).
-		dependsOn(roi).
-		settings(commonSettings: _*)
-
-lazy val check = project.
-		dependsOn(core).
-	dependsOn(roi).
-		settings(commonSettings: _*)
-
-lazy val train = project.
-		dependsOn(core).
-	dependsOn(roi).
-		settings(commonSettings: _*)
-
-lazy val feed = project.
-		dependsOn(core).
-	dependsOn(roi).
-		settings(commonSettings: _*)
-
 lazy val root = (project in file(".")).
 		settings(commonSettings: _*).
-		aggregate(core, simple, roi, check)
+		aggregate(core, simple, roi)
