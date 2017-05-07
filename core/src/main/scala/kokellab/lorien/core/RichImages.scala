@@ -60,6 +60,7 @@ object RichImages {
 	def of(bytes: Array[Byte]): RichImage = RichImage(Image(bytes))
 	def of(frame: FrameImagesRow): RichImage = RichImage(Image(blobToBytes(frame.image)))
 	def of(frame: FrameImagesRow, roi: RoisRow): RichImage = RichImage(Image(blobToBytes(frame.image))).crop(roi)
+//	def of(frame: FrameImagesRow, roi: RoisRow, rotationDegrees: Double): RichImage = RichImage(Image(blobToBytes(frame.image))).rotate(5.0).crop(roi)
 
 	def apply(image: Image) = RichImage(image)
 
