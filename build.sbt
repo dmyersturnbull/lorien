@@ -12,7 +12,7 @@ lazy val commonSettings = Seq(
 	homepage := Some(url("https://github.com/kokellab/thorondor")),
 	developers := List(Developer("dmyersturnbull", "Douglas Myers-Turnbull", "dmyersturnbull@kokellab.com", url("https://github.com/dmyersturnbull"))),
 	startYear := Some(2016),
-	scmInfo := Some(ScmInfo(url("https://github.com/kokellab/lorien"), "https://github.com/kokellab/lorien.git")),
+	scmInfo := Some(ScmInfo(url("https://github.com/kokellab/thorondor"), "https://github.com/kokellab/thorondor.git")),
 	libraryDependencies ++= Seq(
 //		"org.apache.spark" %% "spark-core" % "2.0.1",
 //		"org.apache.spark" %% "spark-sql" % "2.0.1",
@@ -38,21 +38,21 @@ lazy val commonSettings = Seq(
 	pomExtra :=
 		<issueManagement>
 			<system>Github</system>
-			<url>https://github.com/kokellab/lorien/issues</url>
+			<url>https://github.com/kokellab/thorondor/issues</url>
 		</issueManagement>
 )
 
 lazy val core = project.
 		settings(commonSettings: _*)
 
-lazy val simple = project.
+lazy val `lorien-simple` = project.
 	dependsOn(core).
 	settings(commonSettings: _*)
 
-lazy val roi = project.
+lazy val `lorien-roi` = project.
 		dependsOn(core).
 		settings(commonSettings: _*)
 
 lazy val root = (project in file(".")).
 		settings(commonSettings: _*).
-		aggregate(core, simple, roi)
+		aggregate(core, `lorien-simple`, `lorien-roi`)
