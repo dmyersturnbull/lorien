@@ -4,7 +4,7 @@ description := "Thorondor transforms video data into useful features and analysi
 
 lazy val commonSettings = Seq(
 	organization := "com.github.kokellab",
-	version := "0.2.0-SNAPSHOT",
+	version := "0.3.0-SNAPSHOT",
 	scalaVersion := "2.12.2",
 	crossScalaVersions := Seq(scalaVersion.value, "2.11.8"),
 	javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:all"),
@@ -15,9 +15,9 @@ lazy val commonSettings = Seq(
 	startYear := Some(2016),
 	scmInfo := Some(ScmInfo(url("https://github.com/kokellab/thorondor"), "https://github.com/kokellab/thorondor.git")),
 	libraryDependencies ++= Seq(
-//		"org.apache.spark" %% "spark-core" % "2.0.1",
-//		"org.apache.spark" %% "spark-sql" % "2.0.1",
-		//"org.apache.spark" %% "spark-mllib" % "2.0.1",
+//		"org.apache.spark" %% "spark-core" % "2.1.1",
+//		"org.apache.spark" %% "spark-sql" % "2.1.1",
+		//"org.apache.spark" %% "spark-mllib" % "2.1.1",
 		//"com.github.haifengl" %% "smile-scala" % "1.2.0",
 		"org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0",
 		"org.scalanlp" %% "breeze" % "0.13.1",

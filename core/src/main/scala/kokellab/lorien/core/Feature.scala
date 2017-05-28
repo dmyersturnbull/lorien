@@ -1,9 +1,12 @@
 package kokellab.lorien.core
 
+import java.nio.file.{Files, Paths}
+
 import breeze.linalg._
 import kokellab.lorien.core.RichImages.RichImage
 
 import scala.language.implicitConversions
+import kokellab.valar.core.ImageStore
 import kokellab.valar.core.{exec, loadDb}
 
 /**
@@ -26,18 +29,10 @@ sealed trait Feature[@specialized(Byte, Short, Int) I, @specialized(Byte, Int, F
 
 	def apply(input: Iterator[RichImage]): T
 
-	def apply(plateRun: PlateRunsRow, roi: RoisRow, nFramesPerPage: Int = 100): T = {
-		val length: Int = exec((FrameImages filter (_.plateRunId === plateRun.id)).size.result)
-		val pages: Iterator[FrameImagesRow] =
-			(0 until length by nFramesPerPage).iterator flatMap { page =>
-				exec((
-					FrameImages filter (_.plateRunId === plateRun.id) drop page take nFramesPerPage // NOTE: NOT SORTING
-				).result, waitSeconds = 60 * 5).iterator // yes, 5 minute is a long time, but we don't want a long computation to fail just because the connection is momentarily slow
-			}
-		apply {
-			pages map (frame => RichImages.of(frame, roi))
-		}
+	def apply(plateRun: PlateRunsRow, roi: RoisRow, nFramesPerPage: Int = 100): T = apply {
+		ImageStore.walk(plateRun) map (frame => RichImages.of(frame)) map (_.crop(roi))
 	}
+
 }
 
 
