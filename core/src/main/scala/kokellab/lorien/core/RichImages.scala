@@ -7,10 +7,11 @@ import breeze.linalg.DenseMatrix
 import com.sksamuel.scrimage.{Image, Pixel}
 import breeze.linalg._
 import com.sksamuel.scrimage.composite.AverageComposite
+import com.typesafe.scalalogging.LazyLogging
 import kokellab.utils.core.blobToBytes
 import kokellab.valar.core.loadDb
 
-object RichImages {
+object RichImages extends LazyLogging {
 
 	private implicit val db = loadDb()
 
@@ -23,8 +24,14 @@ object RichImages {
 
 		def transpose: Image = image.rotateRight.flipX
 
-		def crop(roi: Roi): RichImage =
-			RichImage((image.subimage _).tupled(roi.xyWidthHeight))
+		def crop(roi: Roi): RichImage = {
+			if (roi.width > image.width)
+				logger.warn(s"Width ${roi.width} for ROI $roi extends outside of image bounds (${image.dimensions})")
+			if (roi.height > image.height)
+				logger.warn(s"Height ${roi.height} for ROI $roi extends outside of image bounds (${image.dimensions})")
+			val boundedXyWidthHeight = (roi.x0, roi.y0, min(image.width, roi.width), min(image.height, roi.height))
+			RichImage((image.subimage _).tupled(boundedXyWidthHeight))
+		}
 
 		def crop(roi: RoisRow): RichImage = crop(Roi.of(roi))
 

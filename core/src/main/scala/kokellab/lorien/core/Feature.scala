@@ -7,6 +7,7 @@ import kokellab.lorien.core.RichImages.RichImage
 
 import scala.language.implicitConversions
 import kokellab.valar.core.ImageStore
+import kokellab.valar.core.Tables.{PlateRunsRow, RoisRow}
 import kokellab.valar.core.{exec, loadDb}
 
 /**
@@ -29,15 +30,39 @@ sealed trait Feature[@specialized(Byte, Short, Int) I, @specialized(Byte, Int, F
 
 	def apply(input: Iterator[RichImage]): T
 
-	def apply(plateRun: PlateRunsRow, roi: RoisRow, nFramesPerPage: Int = 100): T = apply {
+	def apply(plateRun: PlateRunsRow, roi: RoisRow): T = apply {
 		ImageStore.walk(plateRun) map (frame => RichImages.of(frame)) map (_.crop(roi))
 	}
+
 
 }
 
 
 trait TimeVectorFeature[@specialized(Byte, Int, Float, Double) V] extends Feature[Int, V, DenseVector[V]] {
+
 	override def tensorDef: TensorDef = TensorDef.timeDependentVector
+
+	/**
+	  * This is faster than standard apply(plateRun, RoisRow), but requires time-dependent features that are fit into memory for all wells.
+	  * @return
+	  */
+	def applyAll(plateRun: PlateRunsRow, rois: TraversableOnce[RoisRow], length: Int): Map[RoisRow, DenseVector[V]] = {
+		val results = collection.mutable.Map.empty[RoisRow, DenseVector[V]]
+		for (roi <- rois) {
+			results += roi -> DenseVector.zeros[V](length)
+		}
+		var prevFrame: RichImage = null
+		ImageStore.walk(plateRun) foreach {frame =>
+			val image = RichImages.of(frame)
+			if (prevFrame != null) {
+				for (roi <- rois) {
+					results(roi) += apply(Iterator(prevFrame, image))
+				}
+			}
+			prevFrame = image
+		}
+		results.toMap
+	}
 }
 
 trait FreeVectorFeature[@specialized(Byte, Int, Float, Double) V] extends Feature[Int, V, DenseVector[V]] {

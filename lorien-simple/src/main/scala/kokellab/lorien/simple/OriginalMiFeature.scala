@@ -18,4 +18,5 @@ class OriginalMiFeature extends TimeVectorFeature[Float] {
 		val iter: Iterator[Int] = riches.sliding(2, 1) map (f => sum(abs(f.head - f.last)))
 		DenseVector(iter.toArray map (_.toFloat))
 	}
+
 }
