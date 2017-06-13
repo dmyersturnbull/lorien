@@ -5,6 +5,9 @@ import breeze.numerics.abs
 import kokellab.lorien.core.RichImages.RichImage
 import kokellab.lorien.core.TimeVectorFeature
 
+/**
+ * The original definition of Motion Index by Dave Kokel.
+ */
 class OriginalMiFeature extends TimeVectorFeature[Float] {
 
 	override def name: String = "Motion Index"
@@ -15,8 +18,6 @@ class OriginalMiFeature extends TimeVectorFeature[Float] {
 
 	def apply(input: Iterator[RichImage]): DenseVector[Float] = {
 		val riches = input.map(_.rgbMeans)
-		val iter: Iterator[Int] = riches.sliding(2, 1) map (f => sum(abs(f.head - f.last)))
-		DenseVector(iter.toArray map (_.toFloat))
+		riches.sliding(2, 1) map (f => sum(abs(f.head - f.last))) map (_.toFloat)
 	}
-
 }
