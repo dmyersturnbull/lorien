@@ -1,11 +1,13 @@
 package kokellab.lorien.core
 
-import java.nio.file.{Files, Paths}
+import java.io.IOException
+import java.nio.file.{Files, Path, Paths}
 
 import breeze.linalg._
 import kokellab.lorien.core.RichImages.RichImage
 
 import scala.language.implicitConversions
+import scala.util.{Failure, Success, Try}
 import kokellab.valar.core.ImageStore
 import kokellab.valar.core.Tables.{PlateRunsRow, RoisRow}
 import kokellab.valar.core.{exec, loadDb}
@@ -38,7 +40,7 @@ sealed trait Feature[@specialized(Byte, Int, Float, Double) V, T] {
 	 * Constructs a new feature vector.
 	 * <strong>This is not required to be implemented.</strong>
 	*/
-	def newEmpty: T = ???
+	def newEmpty(): T = ???
 
 	def apply(input: Iterator[RichImage]): T
 
@@ -53,17 +55,18 @@ sealed trait Feature[@specialized(Byte, Int, Float, Double) V, T] {
  * F = [F_1, F_2, ..., F_n] = [F(0, 1), F(1, 2), ..., F(n-1, n)]
  * Each F_t is an element in T.
  */
-trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V] extends Feature[V, GenTraversableOnce[V]] {
+trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, T] extends Feature[V, Iterator[T]] {
 
 	/**
 	 * Calculates a time-dependent feature in chunks, two frames at a time.
 	 */
-	def applyAll(plateRun: PlateRunsRow, rois: TraversableOnce[RoisRow]): Map[RoisRow, T] = {
-		val length = RichImages.walk(plateRun).size
-		val results = collection.mutable.Map.empty[RoisRow, T]
+	def applyAll(plateRun: PlateRunsRow, rois: TraversableOnce[RoisRow]): Map[RoisRow, Iterator[T]] = {
+		val length = ImageStore.walk(plateRun).size
+		val results = collection.mutable.Map.empty[RoisRow, Iterator[T]]
 		for (roi <- rois) {
 			results += roi -> newEmpty()
 		}
+		var prevFrame: RichImage = null
 		ImageStore.walk(plateRun) foreach {frame =>
 			val image = Try(RichImages.of(frame)) match {
 				case Success(img) => img
@@ -71,7 +74,8 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V] extends Fea
 				case Failure(e) => throw e
 			}
 			for (roi <- rois) Try {
-				results(roi) ++ apply(prevFrame, image)
+				val wtf: Iterator[T] = apply(Iterator(prevFrame, image))
+				results(roi) ++= wtf
 			} match {
 				case Success(partial) => partial
 				case Failure(e) => throw new CalculationFailedException(Some(plateRun), Some(roi), "Calculation of time-dependent feature failed for plate_run ${plateRun.id} and ROI ${roi.id}", e)
@@ -86,21 +90,21 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V] extends Fea
  * A time-dependent feature vector over V of length n for a video of n frames.
  * Like all time-dependent features, these can be calculated in pieces.
  */
-trait TimeVectorFeature[@specialized(Byte, Int, Float, Double) V] extends Feature[V, GenTraversableOnce[V]] with TimeDependentFeature[V] {
+trait TimeVectorFeature[@specialized(Byte, Int, Float, Double) V] extends Feature[V, Iterator[V]] with TimeDependentFeature[V, V] {
 	override def tensorDef: TensorDef = TensorDef.timeDependentVector
 }
 
 /**
  * A feature vector over V whose length is independent of the number of frames. The dimension may or may not be finite.
  */
-trait FreeVectorFeature[@specialized(Byte, Int, Float, Double) V] extends Feature[V, GenTraversableOnce[V]] {
+trait FreeVectorFeature[@specialized(Byte, Int, Float, Double) V] extends Feature[V, Iterator[V]] {
 	override def tensorDef: TensorDef = TensorDef.freeVector
 }
 
 /**
  * A feature matrix over V whose length is independent of the number of frames. Either dimension may or may not be finite.
  */
-trait FreeMatrixFeature[@specialized(Byte, Int, Float, Double) V] extends Feature[V, GenTraversableOnce[GenTraversableOnce[V]]] {
+trait FreeMatrixFeature[@specialized(Byte, Int, Float, Double) V] extends Feature[V, Iterator[Iterator[V]]] {
 	override def tensorDef: TensorDef = TensorDef.freeMatrix
 }
 
@@ -113,4 +117,4 @@ trait FiniteMatrixFeature[@specialized(Byte, Int, Float, Double) V] extends Feat
    override def tensorDef: TensorDef = TensorDef.freeMatrix
 }
 
-class CalculationFailedException(plateRun: Option[PlateRunsRow], roi: Option[RoisRow], message: String = null, cause: Exception = null) extends Exception(message)
+class CalculationFailedException(plateRun: Option[PlateRunsRow], roi: Option[RoisRow], message: String = null, cause: Throwable = null) extends Exception(message)
