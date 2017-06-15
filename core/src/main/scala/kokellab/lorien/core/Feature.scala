@@ -60,14 +60,14 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, T] extends 
 	/**
 	 * Calculates a time-dependent feature in chunks, two frames at a time.
 	 */
-	def applyAll(plateRun: PlateRunsRow, rois: Traversable[RoisRow]): Map[RoisRow, Iterator[T]] = {
+	def applyAll(plateRun: PlateRunsRow, rois: Traversable[RoisRow]): Map[RoisRow, Seq[T]] = {
 		val length = ImageStore.walk(plateRun).size
-		val results = collection.mutable.Map.empty[RoisRow, Iterator[T]]
+		val results = collection.mutable.Map.empty[RoisRow, Seq[T]]
 		for (roi <- rois) {
-			results += roi -> newEmpty()
+			results += roi -> newEmpty().toSeq
 		}
 		var prevFrame: RichImage = null
-		ImageStore.walk(plateRun) foreach {frame =>
+		ImageStore.walk(plateRun).toList foreach {frame =>
 			val image = Try(RichImages.of(frame)) match {
 				case Success(img) => img
 				case Failure(e: IOException) => throw new CalculationFailedException(Some(plateRun), None, s"Failed to read image $frame for plate_run ${plateRun.id}", e)
@@ -76,7 +76,7 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, T] extends 
 			if (prevFrame != null) {for (roi <- rois) Try {
                           	val first = prevFrame.crop(roi)
                                 val second = image.crop(roi)
-				val wtf: Iterator[T] = apply(List(prevFrame.crop(roi), image.crop(roi)).iterator) // NOTE: somehow Iterator(x, y) memoizes here! Don't use it!!!
+				val wtf: Seq[T] = apply(List(prevFrame.crop(roi), image.crop(roi)).iterator).toList
 				results(roi) = results(roi) ++ wtf
 			} match {
 				case Success(partial) => partial
