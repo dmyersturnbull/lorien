@@ -60,7 +60,7 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, T] extends 
 	/**
 	 * Calculates a time-dependent feature in chunks, two frames at a time.
 	 */
-	def applyAll(plateRun: PlateRunsRow, rois: TraversableOnce[RoisRow]): Map[RoisRow, Iterator[T]] = {
+	def applyAll(plateRun: PlateRunsRow, rois: Traversable[RoisRow]): Map[RoisRow, Iterator[T]] = {
 		val length = ImageStore.walk(plateRun).size
 		val results = collection.mutable.Map.empty[RoisRow, Iterator[T]]
 		for (roi <- rois) {
@@ -73,13 +73,15 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, T] extends 
 				case Failure(e: IOException) => throw new CalculationFailedException(Some(plateRun), None, s"Failed to read image $frame for plate_run ${plateRun.id}", e)
 				case Failure(e) => throw e
 			}
-			for (roi <- rois) Try {
-				val wtf: Iterator[T] = apply(Iterator(prevFrame, image))
-				results(roi) ++= wtf
+			if (prevFrame != null) {for (roi <- rois) Try {
+                          	val first = prevFrame.crop(roi)
+                                val second = image.crop(roi)
+				val wtf: Iterator[T] = apply(List(prevFrame.crop(roi), image.crop(roi)).iterator) // NOTE: somehow Iterator(x, y) memoizes here! Don't use it!!!
+				results(roi) = results(roi) ++ wtf
 			} match {
 				case Success(partial) => partial
 				case Failure(e) => throw new CalculationFailedException(Some(plateRun), Some(roi), "Calculation of time-dependent feature failed for plate_run ${plateRun.id} and ROI ${roi.id}", e)
-			}
+			}}
 			prevFrame = image
 		}
 		results.toMap
