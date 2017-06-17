@@ -3,7 +3,7 @@ package kokellab.lorien.simple
 import breeze.linalg._
 import breeze.numerics.abs
 import kokellab.lorien.core.RichImages.RichImage
-import kokellab.lorien.core.TimeVectorFeature
+import kokellab.lorien.core.{RoiUtils, SimplePlateInfo, TimeVectorFeature}
 
 /**
  * The original definition of Motion Index by Dave Kokel.
@@ -21,5 +21,12 @@ class OriginalMiFeature extends TimeVectorFeature[Float] {
 	def apply(input: Iterator[RichImage]): Iterator[Float] = {
 		val riches = input.map(_.rgbMeans)
 		riches.sliding(2, 1) map (f => sum(abs(f.head - f.last))) map (_.toFloat)
+	}
+}
+
+
+object OriginalMiFeature {
+	def main(args: Array[String]): Unit = {
+		new OriginalMiFeature().applyAll(SimplePlateInfo.fetch(1).run, RoiUtils.manual(1))
 	}
 }

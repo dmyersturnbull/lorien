@@ -46,7 +46,7 @@ class OriginalMiFeatureTest extends PropSpec with GeneratorDrivenPropertyChecks 
 			RichImages.of(Paths.get("core/src/test/resources/2017-04-04-man01-S01-1-1913-195923-background-000004.jpg"))
 		) map (_.crop(new Roi(1, 95, 1, 95)))
 		val feature = new OriginalMiFeature
-		val tensor: DenseVector[Float] = feature(images.iterator)
+		val tensor: Iterator[Float] = feature(images.iterator)
 		for (v <- tensor) println(v)
 	}
 
@@ -61,7 +61,7 @@ class OriginalMiFeatureTest extends PropSpec with GeneratorDrivenPropertyChecks 
 		val roi = exec((Rois filter (_.id === 60117)).result.head)
 
 		val feature = new OriginalMiFeature
-		val tensor: DenseVector[Float] = feature.apply(plateRun, roi)
+		val tensor: Iterator[Float] = feature.apply(plateRun, roi)
 		println()
 	}
 

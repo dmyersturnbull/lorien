@@ -2,6 +2,7 @@ package kokellab.lorien.core
 
 import java.io.IOException
 import java.nio.file.{Files, Path, Paths}
+import java.awt.image.BufferedImage
 
 import breeze.linalg._
 import kokellab.lorien.core.RichImages.RichImage
@@ -56,6 +57,11 @@ sealed trait Feature[@specialized(Byte, Int, Float, Double) V, T] {
  * Each F_t is an element in T.
  */
 trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, T] extends Feature[V, Iterator[T]] {
+
+	private implicit val db = loadDb()
+
+	import kokellab.valar.core.Tables._
+	import kokellab.valar.core.Tables.profile.api._
 
 	/**
 	 * Calculates a time-dependent feature in chunks, two frames at a time.

@@ -17,4 +17,10 @@ package object core {
 
 	lazy val lorienCommitHash: Array[Byte] = thisGitCommitSha1Bytes
 
+
+	trait ThorondorException extends Exception
+	trait LorienException extends ThorondorException
+	class InconsistencyException(message: String = null) extends Exception(message) with ThorondorException
+	class AmbiguousException(message: String = null) extends Exception(message) with ThorondorException
+
 }
