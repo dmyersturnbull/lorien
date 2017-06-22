@@ -1,5 +1,9 @@
 package kokellab.lorien.core
 
+import java.io.IOException
+import java.nio.file.{Files, Path, Paths}
+import kokellab.lorien.core.RichImages.RichImage
+import scala.util.{Failure, Success, Try}
 import kokellab.valar.core.Tables.{PlateRuns, PlateRunsRow, PlateTypes, PlateTypesRow, PlatesRow, Rois, RoisRow}
 import kokellab.valar.core.{exec, loadDb}
 
@@ -22,6 +26,20 @@ object RoiUtils {
 			throw new AmbiguousException(s"Plate type ${info.plateType.id} has ${info.plateType.nRows*info.plateType.nColumns} wells, but found ${rois.size} manually defined ROIs") with LorienException
 		}
 		rois
+	}
+}
+
+object FeatureUtils {
+
+	private implicit val db = loadDb()
+
+	import kokellab.valar.core.Tables._
+	import kokellab.valar.core.Tables.profile.api._
+
+	def tryLoad(frame: Path, run: PlateRunsRow): RichImage = Try(RichImages.of(frame)) match {
+		case Success(img) => img
+		case Failure(e: IOException) => throw new CalculationFailedException(Some(run), None, s"Failed to read image $frame for plate_run ${run.id}", e)
+		case Failure(e) => throw e
 	}
 }
 
