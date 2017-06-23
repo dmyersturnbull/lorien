@@ -62,7 +62,7 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, E] extends 
 		val length = ImageStore.walk(run).size
 		val results: Map[RoisRow, Array[E]] = (rois map (roi => roi -> Array.ofDim[E](length))).toMap
 		val slid = ImageStore.walk(run) map (z => FeatureUtils.tryLoad(z, run)) sliding 2
-		slid.zipWithIndex map { case (Seq(prevImage, nextImage), index) =>
+		slid.zipWithIndex foreach { case (Seq(prevImage, nextImage), index) =>
 			for (roi <- rois) Try {
 				results(roi)(index) = apply(
 					Iterator(prevImage.crop(roi), nextImage.crop(roi))
