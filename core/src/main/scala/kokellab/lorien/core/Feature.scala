@@ -64,7 +64,7 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, E] extends 
 		val slid = ImageStore.walk(run) map (z => FeatureUtils.tryLoad(z, run)) sliding 2
 		slid.zipWithIndex foreach { case (Seq(prevImage, nextImage), index) =>
 			for (roi <- rois) Try {
-				results(roi)(index) = apply(
+				results(roi)(index + 1) = apply( // + 1 so that index 0 is 0
 					Iterator(prevImage.crop(roi), nextImage.crop(roi))
 				).toTraversable.only(
 					excessError = seq => throw new AssertionError(s"The time-dependent feature ${getClass.getSimpleName} returned ${seq.size} != 1 calculated between two frames")
