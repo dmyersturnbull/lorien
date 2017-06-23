@@ -6,7 +6,10 @@ import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
 
 import breeze.linalg._
+import kokellab.lorien.core.RichImages.richImageToImage
 import kokellab.lorien.core.RichImages.RichImage
+import kokellab.lorien.core.RichMatrices.RichMatrix
+import kokellab.lorien.core.RichMatrices.richMatrixToMatrix
 
 import scala.reflect._
 import kokellab.lorien.core.TraversableImplicits._
@@ -34,9 +37,13 @@ sealed trait Feature[@specialized(Byte, Int, Float, Double) V, T] {
 
 	def tensorDef: TensorDef
 
-	def apply(input: Iterator[RichImage]): T
+	def apply(input: Iterator[RichMatrix]): T
 
-	def apply(plateRun: PlateRunsRow, roi: RoisRow): T = apply {
+	def applyOn(input: Iterator[RichImage]): T = apply {
+		input map (_.reds) map (r => RichMatrix(r))
+	}
+
+	def applyOn(plateRun: PlateRunsRow, roi: RoisRow): T = applyOn {
 		ImageStore.walk(plateRun) map (frame => RichImages.of(frame)) map (_.crop(roi))
 	}
 
@@ -58,10 +65,10 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, E] extends 
 	/**
 	 * Calculates a time-dependent feature in chunks, two frames at a time.
 	 */
-	def applyAll(run: PlateRunsRow, rois: Traversable[RoisRow])(implicit tag: ClassTag[E]): Map[RoisRow, Array[E]] = {
+	def applyOnAll(run: PlateRunsRow, rois: Traversable[RoisRow])(implicit tag: ClassTag[E]): Map[RoisRow, Array[E]] = {
 		val length = ImageStore.walk(run).size
 		val results: Map[RoisRow, Array[E]] = (rois map (roi => roi -> Array.ofDim[E](length))).toMap
-		val slid = ImageStore.walk(run) map (z => FeatureUtils.tryLoad(z, run)) sliding 2
+		val slid = ImageStore.walk(run) map (z => FeatureUtils.tryLoad(z, run).reds) sliding 2
 		slid.zipWithIndex foreach { case (Seq(prevImage, nextImage), index) =>
 			for (roi <- rois) Try {
 				results(roi)(index + 1) = apply( // + 1 so that index 0 is 0
