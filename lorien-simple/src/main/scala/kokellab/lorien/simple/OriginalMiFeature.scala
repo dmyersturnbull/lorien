@@ -27,6 +27,7 @@ class OriginalMiFeature extends TimeVectorFeature[Float] {
 
 object OriginalMiFeature {
 	def main(args: Array[String]): Unit = {
-		new OriginalMiFeature().applyAll(SimplePlateInfo.fetch(1).run, RoiUtils.manual(1))
+		val run = args(0).toShort
+		new OriginalMiFeature().applyAll(SimplePlateInfo.fetch(run).run, RoiUtils.manual(run))
 	}
 }

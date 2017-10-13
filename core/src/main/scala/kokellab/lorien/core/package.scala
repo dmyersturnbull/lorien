@@ -17,6 +17,7 @@ package object core {
 
 	lazy val lorienCommitHash: Array[Byte] = thisGitCommitSha1Bytes
 
+	def indicate(b: Boolean): Int = if (b) 1 else 0
 
 	trait ThorondorException extends Exception
 	trait LorienException extends ThorondorException

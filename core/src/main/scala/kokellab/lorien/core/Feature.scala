@@ -63,6 +63,11 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, T] extends 
 	import kokellab.valar.core.Tables._
 	import kokellab.valar.core.Tables.profile.api._
 
+	def calculateAll(plateRun: PlateRunsRow, rois: Traversable[RoisRow]): Unit = {
+		val results = applyAll(plateRun, rois)
+
+	}
+
 	/**
 	 * Calculates a time-dependent feature in chunks, two frames at a time.
 	 */
@@ -80,8 +85,8 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, T] extends 
 				case Failure(e) => throw e
 			}
 			if (prevFrame != null) {for (roi <- rois) Try {
-                          	val first = prevFrame.crop(roi)
-                                val second = image.crop(roi)
+                val first = prevFrame.crop(roi)
+                val second = image.crop(roi)
 				val wtf: Seq[T] = apply(List(prevFrame.crop(roi), image.crop(roi)).iterator).toList
 				results(roi) = results(roi) ++ wtf
 			} match {

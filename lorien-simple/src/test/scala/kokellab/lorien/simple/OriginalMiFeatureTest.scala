@@ -52,17 +52,17 @@ class OriginalMiFeatureTest extends PropSpec with GeneratorDrivenPropertyChecks 
 
 	property("from db") {
 
-		implicit val db = loadDb()
-
-		import kokellab.valar.core.Tables._
-		import kokellab.valar.core.Tables.profile.api._
-
-		val plateRun = exec((PlateRuns filter (_.id === 2490.toShort)).result.head)
-		val roi = exec((Rois filter (_.id === 60117)).result.head)
-
-		val feature = new OriginalMiFeature
-		val tensor: Iterator[Float] = feature.apply(plateRun, roi)
-		println()
+//		implicit val db = loadDb()
+//
+//		import kokellab.valar.core.Tables._
+//		import kokellab.valar.core.Tables.profile.api._
+//
+//		val plateRun = exec((PlateRuns filter (_.id === 2490.toShort)).result.head)
+//		val roi = exec((Rois filter (_.id === 60117)).result.head)
+//
+//		val feature = new OriginalMiFeature
+//		val tensor: Iterator[Float] = feature.apply(plateRun, roi)
+//		println()
 	}
 
 }
