@@ -3,10 +3,16 @@ package kokellab.lorien.core
 import java.io.IOException
 import java.nio.file.{Files, Path, Paths}
 import java.awt.image.BufferedImage
+import javax.imageio.ImageIO
 
 import breeze.linalg._
+import kokellab.lorien.core.RichImages.richImageToImage
 import kokellab.lorien.core.RichImages.RichImage
+import kokellab.lorien.core.RichMatrices.RichMatrix
+import kokellab.lorien.core.RichMatrices.richMatrixToMatrix
 
+import scala.reflect._
+import kokellab.lorien.core.TraversableImplicits._
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 import kokellab.valar.core.ImageStore
@@ -31,23 +37,16 @@ sealed trait Feature[@specialized(Byte, Int, Float, Double) V, T] {
 
 	def tensorDef: TensorDef
 
-	/**
-	 * Constructs a new, empty feature vector.
-	 * <strong>This is not required to be implemented.</strong>
- 	 */
-	def newEmpty(length: Int): T = ???
+	def apply(input: Iterator[RichMatrix]): T
 
-	/**
-	 * Constructs a new feature vector.
-	 * <strong>This is not required to be implemented.</strong>
-	*/
-	def newEmpty(): T = ???
+	def applyOn(input: Iterator[RichImage]): T = apply {
+		input map (_.reds) map (r => RichMatrix(r))
+	}
 
-	def apply(input: Iterator[RichImage]): T
-
-	def apply(plateRun: PlateRunsRow, roi: RoisRow): T = apply {
+	def applyOn(plateRun: PlateRunsRow, roi: RoisRow): T = applyOn {
 		ImageStore.walk(plateRun) map (frame => RichImages.of(frame)) map (_.crop(roi))
 	}
+
 }
 
 /**
@@ -56,7 +55,7 @@ sealed trait Feature[@specialized(Byte, Int, Float, Double) V, T] {
  * F = [F_1, F_2, ..., F_n] = [F(0, 1), F(1, 2), ..., F(n-1, n)]
  * Each F_t is an element in T.
  */
-trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, T] extends Feature[V, Iterator[T]] {
+trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, E] extends Feature[V, Iterator[E]] {
 
 	private implicit val db = loadDb()
 
@@ -71,31 +70,23 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, T] extends 
 	/**
 	 * Calculates a time-dependent feature in chunks, two frames at a time.
 	 */
-	def applyAll(plateRun: PlateRunsRow, rois: Traversable[RoisRow]): Map[RoisRow, Seq[T]] = {
-		val length = ImageStore.walk(plateRun).size
-		val results = collection.mutable.Map.empty[RoisRow, Seq[T]]
-		for (roi <- rois) {
-			results += roi -> newEmpty().toSeq
-		}
-		var prevFrame: RichImage = null
-		ImageStore.walk(plateRun).toList foreach {frame =>
-			val image = Try(RichImages.of(frame)) match {
-				case Success(img) => img
-				case Failure(e: IOException) => throw new CalculationFailedException(Some(plateRun), None, s"Failed to read image $frame for plate_run ${plateRun.id}", e)
-				case Failure(e) => throw e
-			}
-			if (prevFrame != null) {for (roi <- rois) Try {
-                val first = prevFrame.crop(roi)
-                val second = image.crop(roi)
-				val wtf: Seq[T] = apply(List(prevFrame.crop(roi), image.crop(roi)).iterator).toList
-				results(roi) = results(roi) ++ wtf
+	def applyOnAll(run: PlateRunsRow, rois: Traversable[RoisRow])(implicit tag: ClassTag[E]): Map[RoisRow, Array[E]] = {
+		val length = ImageStore.walk(run).size
+		val results: Map[RoisRow, Array[E]] = (rois map (roi => roi -> Array.ofDim[E](length))).toMap
+		val slid = ImageStore.walk(run) map (z => FeatureUtils.tryLoad(z, run).reds) sliding 2
+		slid.zipWithIndex foreach { case (Seq(prevImage, nextImage), index) =>
+			for (roi <- rois) Try {
+				results(roi)(index + 1) = apply( // + 1 so that index 0 is 0
+					Iterator(prevImage.crop(roi), nextImage.crop(roi))
+				).toTraversable.only(
+					excessError = seq => throw new AssertionError(s"The time-dependent feature ${getClass.getSimpleName} returned ${seq.size} != 1 calculated between two frames")
+				)
 			} match {
 				case Success(partial) => partial
-				case Failure(e) => throw new CalculationFailedException(Some(plateRun), Some(roi), "Calculation of time-dependent feature failed for plate_run ${plateRun.id} and ROI ${roi.id}", e)
-			}}
-			prevFrame = image
+				case Failure(e) => throw new CalculationFailedException(Some(run), Some(roi), "Calculation of time-dependent feature failed for plate_run ${plateRun.id} and ROI ${roi.id}", e)
+			}
 		}
-		results.toMap
+		results
 	}
 }
 

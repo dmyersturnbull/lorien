@@ -2,7 +2,10 @@ package kokellab.lorien.simple
 
 import breeze.linalg._
 import breeze.numerics.abs
-import kokellab.lorien.core.RichImages.RichImage
+import scala.reflect.runtime.universe._
+import kokellab.lorien.core.RichMatrices.RichMatrix
+import kokellab.lorien.core.RichMatrices.richMatrixToMatrix
+import scala.language.implicitConversions
 import kokellab.lorien.core.{RoiUtils, SimplePlateInfo, TimeVectorFeature}
 
 /**
@@ -16,18 +19,14 @@ class OriginalMiFeature extends TimeVectorFeature[Float] {
 
 	override def description: String = "Original definition of motion index; sums the difference in pixel intensities over each well for consecutive frames. MI at frame 0 is defined as 0."
 
-	override def newEmpty(): Iterator[Float] = Seq.empty[Float].iterator
-
-	def apply(input: Iterator[RichImage]): Iterator[Float] = {
-		val riches = input.map(_.rgbMeans)
-		riches.sliding(2, 1) map (f => sum(abs(f.head - f.last))) map (_.toFloat)
+	def apply(input: Iterator[RichMatrix]): Iterator[Float] = {
+		input map (_.matrix) sliding (2, 1) map (f => sum(abs(f.head - f.last))) map (_.toFloat)
 	}
 }
 
 
 object OriginalMiFeature {
 	def main(args: Array[String]): Unit = {
-		val run = args(0).toShort
-		new OriginalMiFeature().applyAll(SimplePlateInfo.fetch(run).run, RoiUtils.manual(run))
+		new OriginalMiFeature().applyOnAll(SimplePlateInfo.fetch(1).run, RoiUtils.manual(1))
 	}
 }
