@@ -1,15 +1,9 @@
 package kokellab.lorien.core
 
-import java.io.IOException
-import java.nio.file.{Files, Path, Paths}
-import java.awt.image.BufferedImage
-import javax.imageio.ImageIO
-
+import java.nio.file.Path
 import breeze.linalg._
-import kokellab.lorien.core.RichImages.richImageToImage
 import kokellab.lorien.core.RichImages.RichImage
 import kokellab.lorien.core.RichMatrices.RichMatrix
-import kokellab.lorien.core.RichMatrices.richMatrixToMatrix
 
 import scala.reflect._
 import kokellab.lorien.core.TraversableImplicits._
@@ -67,10 +61,33 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, E] extends 
 	import kokellab.valar.core.Tables._
 	import kokellab.valar.core.Tables.profile.api._
 
+	def converter: Array[E] => Array[Byte]
+
 	/**
 	  * Calculates an imports a feature.
 	  */
-	def insertOnAll(run: PlateRunsRow, rois: Traversable[RoisRow], lorienConfigId: Short = 1, converter: Array[E] => Array[Byte])(implicit tag: ClassTag[E]): Unit = {
+	def insertOnAll(
+			run: PlateRunsRow,
+			rois: Traversable[RoisRow],
+			lorienConfigId: Option[Short]
+	)(implicit tag: ClassTag[E]): Unit = {
+		insertOnAll(run, rois, lorienConfigId, ImageStore.walk(run), ImageStore.length(run))
+	}
+
+	/**
+	  * Calculates an imports a feature.
+	  * Uses the most recent Lorien config if it's None.
+	  */
+	def insertOnAll(
+			run: PlateRunsRow,
+			rois: Traversable[RoisRow],
+			lorienConfigId: Option[Short],
+			frames: Iterator[Path],
+			nFrames: Int
+	)(implicit tag: ClassTag[E]): Unit = {
+		val config = lorienConfigId getOrElse {
+			exec((LorienConfigs sortBy (_.created) map (_.id) take 1).result).head
+		}
 		val results = applyOnAll(run, rois)(tag)
 		results foreach {case (roi, array) =>
 			val bytes = converter(array)
@@ -79,7 +96,7 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, E] extends 
 					id = 0,
 					wellId = roi.wellId,
 					typeId = valarFeatureId,
-					lorienConfigId = lorienConfigId,
+					lorienConfigId = config,
 					lorienCommitSha1 = bytesToBlob(lorienCommitHash),
 					floats = bytesToBlob(bytes),
 					sha1 = bytesToHashBlob(bytes)
@@ -88,12 +105,24 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, E] extends 
 		}
 	}
 
+
+	/**
+	  * Calculates a time-dependent feature in chunks, two frames at a time.
+	  */
+	def applyOnAll(run: PlateRunsRow, rois: Traversable[RoisRow])(implicit tag: ClassTag[E]): Map[RoisRow, Array[E]] = {
+		applyOnAll(run, rois, ImageStore.walk(run), ImageStore.length(run))
+	}
+
 	/**
 	 * Calculates a time-dependent feature in chunks, two frames at a time.
 	 */
-	def applyOnAll(run: PlateRunsRow, rois: Traversable[RoisRow])(implicit tag: ClassTag[E]): Map[RoisRow, Array[E]] = {
-		val length = ImageStore.walk(run).size
-		val results: Map[RoisRow, Array[E]] = (rois map (roi => roi -> Array.ofDim[E](length))).toMap
+	def applyOnAll(
+			run: PlateRunsRow,
+			rois: Traversable[RoisRow],
+			frames: Iterator[Path],
+			nFrames: Int
+	)(implicit tag: ClassTag[E]): Map[RoisRow, Array[E]] = {
+		val results: Map[RoisRow, Array[E]] = (rois map (roi => roi -> Array.ofDim[E](nFrames))).toMap
 		val slid = ImageStore.walk(run) map (z => FeatureUtils.tryLoad(z, run).reds) sliding 2
 		slid.zipWithIndex foreach { case (Seq(prevImage, nextImage), index) =>
 			for (roi <- rois) Try {

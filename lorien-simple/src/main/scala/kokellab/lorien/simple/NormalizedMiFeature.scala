@@ -4,8 +4,10 @@ import breeze.linalg._
 import breeze.numerics.abs
 import kokellab.lorien.core._
 import kokellab.lorien.core.TimeVectorFeature
-import kokellab.lorien.core.RichImages.RichImage
 import kokellab.lorien.core.RichMatrices.RichMatrix
+import kokellab.valar.core.loadDb
+
+import scala.util.Try
 
 
 /**
@@ -24,6 +26,8 @@ class NormalizedMiFeature(val threshold: Int = 5, val expectedMax: Double = 40) 
 	override def description: String = "Normalizes by brightness, thresholds, and takes a mean."
 
 	override def valarFeatureId: Byte = 2
+
+	def converter: Array[Byte] => Array[Byte] = arr => arr
 
 	private var minV = 0.0
 
@@ -64,6 +68,13 @@ class NormalizedMiFeature(val threshold: Int = 5, val expectedMax: Double = 40) 
 
 object NormalizedMiFeature {
 	def main(args: Array[String]): Unit = {
-
+		val feature = new NormalizedMiFeature()
+		Try(args(0).toShort).toOption match {
+			case Some(runId) =>
+				val run = SimplePlateInfo.fetch(args(0).toShort).run
+				val rois = RoiUtils.manual(run.id)
+				feature.insertOnAll(run, rois, None)
+			case None => println("Must provide a plate run ID")
+		}
 	}
 }

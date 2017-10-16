@@ -2,11 +2,13 @@ package kokellab.lorien.simple
 
 import breeze.linalg._
 import breeze.numerics.abs
-import scala.reflect.runtime.universe._
 import kokellab.lorien.core.RichMatrices.RichMatrix
-import kokellab.lorien.core.RichMatrices.richMatrixToMatrix
+
 import scala.language.implicitConversions
 import kokellab.lorien.core.{RoiUtils, SimplePlateInfo, TimeVectorFeature}
+import kokellab.utils.core._
+
+import scala.util.Try
 
 /**
  * The original definition of Motion Index by Dave Kokel.
@@ -21,6 +23,8 @@ class OriginalMiFeature extends TimeVectorFeature[Float] {
 
 	override def valarFeatureId: Byte = 1
 
+	def converter: Array[Float] => Array[Byte] = arr => floatsToBytes(arr).toArray
+
 	def apply(input: Iterator[RichMatrix]): Iterator[Float] = {
 		input map (_.matrix) sliding (2, 1) map (f => sum(abs(f.head - f.last))) map (_.toFloat)
 	}
@@ -29,6 +33,13 @@ class OriginalMiFeature extends TimeVectorFeature[Float] {
 
 object OriginalMiFeature {
 	def main(args: Array[String]): Unit = {
-		new OriginalMiFeature().applyOnAll(SimplePlateInfo.fetch(1).run, RoiUtils.manual(1))
+		val feature = new OriginalMiFeature()
+		Try(args(0).toShort).toOption match {
+			case Some(runId) =>
+				val run = SimplePlateInfo.fetch(args(0).toShort).run
+				val rois = RoiUtils.manual(run.id)
+				feature.insertOnAll(run, rois, None)
+			case None => println("Must provide a plate run ID")
+		}
 	}
 }
