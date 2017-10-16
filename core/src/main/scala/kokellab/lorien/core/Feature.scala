@@ -15,9 +15,11 @@ import scala.reflect._
 import kokellab.lorien.core.TraversableImplicits._
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
+import kokellab.utils.core._
 import kokellab.valar.core.ImageStore
 import kokellab.valar.core.Tables.{PlateRunsRow, RoisRow}
 import kokellab.valar.core.{exec, loadDb}
+
 
 /**
   * A Feature maps a time-series of bitmap images to an output tensor of type T over a field V.
@@ -37,6 +39,8 @@ sealed trait Feature[@specialized(Byte, Int, Float, Double) V, T] {
 
 	def tensorDef: TensorDef
 
+	def valarFeatureId: Byte
+
 	def apply(input: Iterator[RichMatrix]): T
 
 	def applyOn(input: Iterator[RichImage]): T = apply {
@@ -48,6 +52,7 @@ sealed trait Feature[@specialized(Byte, Int, Float, Double) V, T] {
 	}
 
 }
+
 
 /**
  * A time-dependent feature F has a number of elements n for a video of n frames.
@@ -62,9 +67,25 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, E] extends 
 	import kokellab.valar.core.Tables._
 	import kokellab.valar.core.Tables.profile.api._
 
-	def calculateAll(plateRun: PlateRunsRow, rois: Traversable[RoisRow]): Unit = {
-		val results = applyAll(plateRun, rois)
-
+	/**
+	  * Calculates an imports a feature.
+	  */
+	def insertOnAll(run: PlateRunsRow, rois: Traversable[RoisRow], lorienConfigId: Short = 1, converter: Array[E] => Array[Byte])(implicit tag: ClassTag[E]): Unit = {
+		val results = applyOnAll(run, rois)(tag)
+		results foreach {case (roi, array) =>
+			val bytes = converter(array)
+			exec(
+				WellFeatures += WellFeaturesRow(
+					id = 0,
+					wellId = roi.wellId,
+					typeId = valarFeatureId,
+					lorienConfigId = lorienConfigId,
+					lorienCommitSha1 = bytesToBlob(lorienCommitHash),
+					floats = bytesToBlob(bytes),
+					sha1 = bytesToHashBlob(bytes)
+				)
+			)
+		}
 	}
 
 	/**

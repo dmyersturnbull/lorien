@@ -19,6 +19,8 @@ class OriginalMiFeature extends TimeVectorFeature[Float] {
 
 	override def description: String = "Original definition of motion index; sums the difference in pixel intensities over each well for consecutive frames. MI at frame 0 is defined as 0."
 
+	override def valarFeatureId: Byte = 1
+
 	def apply(input: Iterator[RichMatrix]): Iterator[Float] = {
 		input map (_.matrix) sliding (2, 1) map (f => sum(abs(f.head - f.last))) map (_.toFloat)
 	}
