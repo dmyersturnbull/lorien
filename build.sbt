@@ -4,7 +4,7 @@ description := "Thorondor transforms video data into useful features and analysi
 
 lazy val commonSettings = Seq(
 	organization := "com.github.kokellab",
-	version := "0.3.0-SNAPSHOT",
+	version := "0.4.0-SNAPSHOT",
 	scalaVersion := "2.12.2",
 	crossScalaVersions := Seq(scalaVersion.value, "2.11.8"),
 	javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:all"),
