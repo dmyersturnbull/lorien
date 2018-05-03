@@ -5,7 +5,7 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.NoSuchElementException
 
 import breeze.linalg.DenseMatrix
-import kokellab.lorien.core2.Codec.H265
+import kokellab.lorien.core2.Codec.H265Crf
 import kokellab.utils.misc.{FileHasher, ValidationFailedException}
 import org.bytedeco.javacpp.avformat.AVFormatContext
 import org.bytedeco.javacpp.opencv_core.Mat
@@ -36,17 +36,17 @@ trait Codec {
 	def ext: String
 }
 object Codec {
-	case class H265(crf: Byte) extends Codec with Comparable[H265] {
+	case class H265Crf(crf: Byte) extends Codec with Comparable[H265Crf] {
 		require(crf > 0 && crf < 52, s"Invalid CRF $crf")
 		override def name: String = "High Efficiency Video Coding"
 		override def ext: String = ".x265-" + crf
-		override def compareTo(o: H265): Int = crf compareTo o.crf
+		override def compareTo(o: H265Crf): Int = crf compareTo o.crf
 	}
-	case class H264(crf: Byte) extends Codec with Comparable[H265] {
+	case class H264Crf(crf: Byte) extends Codec with Comparable[H265Crf] {
 		require(crf > 0 && crf < 52, s"Invalid CRF $crf")
-		override def name: String = "MPEG-4 Part 10, Advanced Video Codingg"
+		override def name: String = "MPEG-4 Part 10, Advanced Video Coding"
 		override def ext: String = ".x264-" + crf
-		override def compareTo(o: H265): Int = crf compareTo o.crf
+		override def compareTo(o: H265Crf): Int = crf compareTo o.crf
 	}
 }
 
@@ -71,26 +71,28 @@ case class VideoFile(path: Path, containerFormat: ContainerFormat, codec: Codec)
 class VideoIterator(grabber: FFmpegFrameGrabber) extends Iterator[Frame] with Closeable {
 
 	grabber.start()
-
-	private var prev: Frame = grabber.grab()
-	private var trulyDone = false
-
-	override def hasNext: Boolean = !trulyDone
+	override val length: Int = grabber.getLengthInFrames
+	private var i = 0
+	override def hasNext: Boolean = i < length - 1
 
 	override def next(): Frame = {
-		if (trulyDone) throw new NoSuchElementException(s"No frames left in video")
-		val temp = prev
-		if (prev == null) {
-			trulyDone = true
+		if (i == length - 1) {
 			close()
 		}
-		else prev = grabber.grab()
-		temp
+//		grabber.setFrameNumber(i)
+		i += 1
+		/*
+		 * Read the Javadoc for FrameGrabber.grab() carefully:
+		 * Although it returns a new Frame, that Frame is always that same. That is:
+		 * frame.grab() == frame.grab()
+		 * Instead, it replaces the buffer of the old frame to reduce the frequency of GC.
+		 * We could probably exploit this, but this is simpler.
+		 */
+		grabber.grab().clone()
 	}
 
 	override def close(): Unit = {
-		grabber.stop()
-		grabber.release()
+		grabber.close()
 	}
 
 	def frameNumber(frameNumber: Int): Unit = grabber.setFrameNumber(frameNumber)
@@ -115,6 +117,7 @@ class VideoIterator(grabber: FFmpegFrameGrabber) extends Iterator[Frame] with Cl
 	def imageWidth: Int = grabber.getImageWidth
 	def lengthInTime: Long = grabber.getLengthInTime
 }
+
 object VideoIterator {
 	def from(path: Path) = new VideoIterator(new FFmpegFrameGrabber(path.toFile))
 	def peekAt[V](path: Path)(getter: VideoIterator => V): V = peekAt(from(path))(getter)
@@ -126,53 +129,4 @@ object VideoIterator {
 			if (iter != null) iter.close()
 		}
 	}
-}
-
-
-trait FrameConverter[T] extends (Frame => T) {
-	def apply(frame: Frame): T
-}
-object FrameConverter {
-	private val matConverter = new OpenCVFrameConverter.ToMat
-	class ToMat(imageFormat: Int) extends FrameConverter[Mat] {
-		override def apply(frame: Frame): Mat = {
-			val conv = matConverter.convert(frame)
-			val toFill = new Mat()
-			cvtColor(conv, toFill, imageFormat)
-			toFill
-		}
-	}
-	class ToFloatMatrix extends FrameConverter[DenseMatrix[Float]] {
-		override def apply(frame: Frame): DenseMatrix[Float] = {
-			val data = grayscaleMat(frame).asByteBuffer.array map (_.toFloat)
-			val matrix = new DenseMatrix[Float](frame.imageWidth, frame.imageHeight)
-			data.copyToArray(matrix.data)
-			matrix
-		}
-	}
-	class ToDoubleMatrix extends FrameConverter[DenseMatrix[Double]] {
-		override def apply(frame: Frame): DenseMatrix[Double] = {
-			val data = grayscaleMat(frame).asByteBuffer.array map (_.toDouble)
-			val matrix = new DenseMatrix[Double](frame.imageWidth, frame.imageHeight)
-			data.copyToArray(matrix.data)
-			matrix
-		}
-	}
-	class ToIntMatrix extends FrameConverter[DenseMatrix[Int]] {
-		override def apply(frame: Frame): DenseMatrix[Int] = {
-			val data = grayscaleMat(frame).asByteBuffer.array map (_.toInt)
-			val matrix = new DenseMatrix[Int](frame.imageWidth, frame.imageHeight)
-			data.copyToArray(matrix.data)
-			matrix
-		}
-	}
-	class ToLongMatrix extends FrameConverter[DenseMatrix[Long]] {
-		override def apply(frame: Frame): DenseMatrix[Long] = {
-			val data = grayscaleMat(frame).asByteBuffer.array map (_.toLong)
-			val matrix = new DenseMatrix[Long](frame.imageWidth, frame.imageHeight)
-			data.copyToArray(matrix.data)
-			matrix
-		}
-	}
-	val grayscaleMat = new ToMat(COLOR_YUV2GRAY_420)
 }

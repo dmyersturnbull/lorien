@@ -35,7 +35,7 @@ trait VTimeFeature[@specialized(Byte, Short, Int, Long, Float, Double) V] extend
 	)(implicit tag: ClassTag[V]): Map[Roi, Array[V]] = {
 		val nFrames = video.nFrames
 		val results: Map[Roi, Array[V]] = (rois map (roi => roi -> Array.ofDim[V](nFrames))).toMap
-		val slid = video.reader() map new FrameConverter.ToIntMatrix map (m => RichMatrix(m)) sliding 2
+		val slid = video.reader() map (f => BlazingMatrix.of(f).toBreezeMatrix) sliding 2
 		slid.zipWithIndex foreach { case (Seq(prevImage, nextImage), index) =>
 			for (roi <- rois) {
 				results(roi)(index + 1) = apply( // + 1 so that index 0 is 0
