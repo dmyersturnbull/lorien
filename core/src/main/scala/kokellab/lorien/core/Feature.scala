@@ -11,7 +11,7 @@ import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 import kokellab.utils.core._
 import kokellab.valar.core.ImageStore
-import kokellab.valar.core.Tables.{PlateRunsRow, RoisRow}
+import kokellab.valar.core.Tables.{RunsRow, RoisRow}
 import kokellab.valar.core.{exec, loadDb}
 
 
@@ -41,7 +41,7 @@ sealed trait Feature[@specialized(Byte, Int, Float, Double) V, T] {
 		input map (_.reds) map (r => RichMatrix(r))
 	}
 
-	def applyOn(plateRun: PlateRunsRow, roi: RoisRow): T = applyOn {
+	def applyOn(plateRun: RunsRow, roi: RoisRow): T = applyOn {
 		ImageStore.walk(plateRun) map (frame => RichImages.of(frame)) map (_.crop(roi))
 	}
 
@@ -67,7 +67,7 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, E] extends 
 	  * Calculates an imports a feature.
 	  */
 	def insertOnAll(
-			run: PlateRunsRow,
+			run: RunsRow,
 			rois: Traversable[RoisRow],
 			lorienConfigId: Option[Short]
 	)(implicit tag: ClassTag[E]): Unit = {
@@ -79,7 +79,7 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, E] extends 
 	  * Uses the most recent Lorien config if it's None.
 	  */
 	def insertOnAll(
-			run: PlateRunsRow,
+			run: RunsRow,
 			rois: Traversable[RoisRow],
 			lorienConfigId: Option[Short],
 			frames: Iterator[Path],
@@ -109,7 +109,7 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, E] extends 
 	/**
 	  * Calculates a time-dependent feature in chunks, two frames at a time.
 	  */
-	def applyOnAll(run: PlateRunsRow, rois: Traversable[RoisRow])(implicit tag: ClassTag[E]): Map[RoisRow, Array[E]] = {
+	def applyOnAll(run: RunsRow, rois: Traversable[RoisRow])(implicit tag: ClassTag[E]): Map[RoisRow, Array[E]] = {
 		applyOnAll(run, rois, ImageStore.walk(run), ImageStore.length(run))
 	}
 
@@ -117,7 +117,7 @@ trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, E] extends 
 	 * Calculates a time-dependent feature in chunks, two frames at a time.
 	 */
 	def applyOnAll(
-			run: PlateRunsRow,
+			run: RunsRow,
 			rois: Traversable[RoisRow],
 			frames: Iterator[Path],
 			nFrames: Int
@@ -171,4 +171,4 @@ trait FiniteMatrixFeature[@specialized(Byte, Int, Float, Double) V] extends Feat
    override def tensorDef: TensorDef = TensorDef.freeMatrix
 }
 
-class CalculationFailedException(plateRun: Option[PlateRunsRow], roi: Option[RoisRow], message: String = null, cause: Throwable = null) extends Exception(message)
+class CalculationFailedException(plateRun: Option[RunsRow], roi: Option[RoisRow], message: String = null, cause: Throwable = null) extends Exception(message)

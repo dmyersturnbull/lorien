@@ -4,7 +4,7 @@ import java.io.IOException
 import java.nio.file.{Files, Path, Paths}
 import kokellab.lorien.core.RichImages.RichImage
 import scala.util.{Failure, Success, Try}
-import kokellab.valar.core.Tables.{PlateRuns, PlateRunsRow, PlateTypes, PlateTypesRow, PlatesRow, Rois, RoisRow}
+import kokellab.valar.core.Tables.{Runs, RunsRow, PlateTypes, PlateTypesRow, PlatesRow, Rois, RoisRow}
 import kokellab.valar.core.{exec, loadDb}
 
 object RoiUtils {
@@ -14,12 +14,12 @@ object RoiUtils {
 	import kokellab.valar.core.Tables._
 	import kokellab.valar.core.Tables.profile.api._
 
-	def manual(plateRunId: Short): Seq[RoisRow] = {
+	def manual(plateRunId: Int): Seq[RoisRow] = {
 		val info = SimplePlateInfo.fetch(plateRunId)
 		val rois: Seq[RoisRow] = exec((
 			for {
 				(roi, well) <- Rois join Wells on (_.wellId === _.id)
-				if well.plateRunId === plateRunId && roi.lorienConfig.isEmpty
+				if well.runId === plateRunId // TODO && roi.lorienConfig.isEmpty
 			} yield roi
 		).result)
 		if (rois.size != info.plateType.nRows * info.plateType.nColumns) {
@@ -36,7 +36,7 @@ object FeatureUtils {
 	import kokellab.valar.core.Tables._
 	import kokellab.valar.core.Tables.profile.api._
 
-	def tryLoad(frame: Path, run: PlateRunsRow): RichImage = Try(RichImages.of(frame)) match {
+	def tryLoad(frame: Path, run: RunsRow): RichImage = Try(RichImages.of(frame)) match {
 		case Success(img) => img
 		case Failure(e: IOException) => throw new CalculationFailedException(Some(run), None, s"Failed to read image $frame for plate_run ${run.id}", e)
 		case Failure(e) => throw e
@@ -44,7 +44,7 @@ object FeatureUtils {
 }
 
 
-case class SimplePlateInfo(run: PlateRunsRow, plate: PlatesRow, plateType: PlateTypesRow)
+case class SimplePlateInfo(run: RunsRow, plate: PlatesRow, plateType: PlateTypesRow)
 
 object SimplePlateInfo {
 
@@ -53,10 +53,10 @@ object SimplePlateInfo {
 	import kokellab.valar.core.Tables._
 	import kokellab.valar.core.Tables.profile.api._
 
-	def fetch(plateRunId: Short): SimplePlateInfo = {
+	def fetch(plateRunId: Int): SimplePlateInfo = {
 		val stuff = exec((
 			for {
-				((run, plate), plateType) <- PlateRuns join Plates on (_.plateId === _.id) join PlateTypes on (_._2.plateTypeId === _.id)
+				((run, plate), plateType) <- Runs join Plates on (_.plateId === _.id) join PlateTypes on (_._2.plateTypeId === _.id)
 				if run.id === plateRunId
 			} yield (run, plate, plateType)
 		).result).headOption.orNull

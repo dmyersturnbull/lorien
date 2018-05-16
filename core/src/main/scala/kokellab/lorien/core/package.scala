@@ -33,9 +33,8 @@ package object core {
 		}
 	}
 
-	trait ThorondorException extends Exception
-	trait LorienException extends ThorondorException
-	class InconsistencyException(message: String = null) extends Exception(message) with ThorondorException
-	class AmbiguousException(message: String = null) extends Exception(message) with ThorondorException
+	trait LorienException extends Exception
+	class InconsistencyException(message: String = null) extends Exception(message) with LorienException
+	class AmbiguousException(message: String = null) extends Exception(message) with LorienException
 
 }

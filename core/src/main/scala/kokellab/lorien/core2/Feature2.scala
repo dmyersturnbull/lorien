@@ -1,7 +1,7 @@
 package kokellab.lorien.core2
 
 import kokellab.lorien.core.Roi
-import kokellab.lorien.core.RichMatrices.RichMatrix
+import kokellab.lorien.core2.RichMatrices.RichMatrix
 import kokellab.lorien.core.TraversableImplicits._
 
 import scala.language.implicitConversions
@@ -15,7 +15,7 @@ sealed trait VFeature[@specialized(Byte, Short, Int, Long, Float, Double) V] {
 	def name: String
 	def valarId: Byte
 	def apply(input: Iterator[RichMatrix]): Array[V]
-	def bytes(array: Array[V]): Array[Byte]
+//	def bytes(array: Array[V]): Array[Byte]
 }
 
 
