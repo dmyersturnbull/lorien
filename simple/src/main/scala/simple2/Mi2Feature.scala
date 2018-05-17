@@ -1,10 +1,7 @@
-package kokellab.lorien.simple
+package simple2
 
-import kokellab.lorien.core.{RoiUtils, SimplePlateInfo}
 import kokellab.lorien.core2.RichMatrices.RichMatrix
-import kokellab.lorien.core2.{BlazingMatrix, VFeature, VTimeFeature}
-
-import scala.util.Try
+import kokellab.lorien.core2.VTimeFeature
 
 class Mi2Feature extends VTimeFeature[Short] {
 
