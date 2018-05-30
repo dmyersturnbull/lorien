@@ -4,9 +4,8 @@ description := "Lorien transforms video data into useful features."
 
 lazy val commonSettings = Seq(
 	organization := "com.github.kokellab",
-	version := "0.4.0-SNAPSHOT",
-	scalaVersion := "2.12.2",
-	crossScalaVersions := Seq(scalaVersion.value, "2.11.8"),
+	version := "0.4.1-SNAPSHOT",
+	scalaVersion := "2.12.6",
 	javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:all"),
 	scalacOptions ++= Seq("-unchecked", "-deprecation"),
 	testOptions in Test += Tests.Argument("-oF"),
@@ -16,18 +15,18 @@ lazy val commonSettings = Seq(
 	scmInfo := Some(ScmInfo(url("https://github.com/kokellab/lorien"), "https://github.com/kokellab/lorien.git")),
 	libraryDependencies ++= Seq(
 		"org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0",
-		"org.scalanlp" %% "breeze" % "0.13.2",
+		"org.scalanlp" %% "breeze" % "1.0-RC2",
 		"com.sksamuel.scrimage" %% "scrimage-core" % "2.1.8",
-		"org.bytedeco" % "javacv-platform" % "1.3.3",
+		"org.bytedeco" % "javacv-platform" % "1.4.1",
 		"org.boofcv" % "core" % "0.26",
 		"org.typelevel"  %% "squants"  % "1.3.0",
-		"com.google.guava" % "guava" % "23.5-jre",
+		"com.google.guava" % "guava" % "25.1-jre",
 		"com.typesafe.slick" %% "slick" % "3.2.0",
-		"org.slf4j" % "slf4j-api" % "1.8.0-beta0",
-		"com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
-		"org.scalatest" %% "scalatest" % "3.0.4" % "test",
-		"org.scalactic" %% "scalactic" % "3.0.4" % "test",
-		"org.scalacheck" %% "scalacheck" % "1.13.5" % "test"
+		"org.slf4j" % "slf4j-api" % "1.8.0-beta2",
+		"com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
+		"org.scalatest" %% "scalatest" % "3.0.5" % "test",
+		"org.scalactic" %% "scalactic" % "3.0.5" % "test",
+		"org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 	) map (_.exclude("log4j", "log4j")) map (_.exclude("org.slf4j", "slf4j-log4j12")),
 	pomExtra :=
 		<issueManagement>
