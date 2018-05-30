@@ -1,11 +1,11 @@
-package kokellab.lorien.core2
+package kokellab.lorien.core
 
 import java.io.{Closeable, File}
 import java.nio.file.{Files, Path, Paths}
 import java.util.NoSuchElementException
 
 import breeze.linalg.DenseMatrix
-import kokellab.lorien.core2.Codec.H265Crf
+import kokellab.lorien.core.Codec.H265Crf
 import kokellab.utils.misc.{FileHasher, ValidationFailedException}
 import org.bytedeco.javacpp.avformat.AVFormatContext
 import org.bytedeco.javacpp.opencv_core.Mat

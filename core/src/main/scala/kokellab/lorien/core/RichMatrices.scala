@@ -1,9 +1,10 @@
-package kokellab.lorien.core2
+package kokellab.lorien.core
 
 import scala.language.implicitConversions
 import breeze.linalg.DenseMatrix
 import breeze.linalg._
 import breeze.numerics.abs
+import breeze.linalg.{sum => breezesum}
 import breeze.stats.DescriptiveStats
 import com.typesafe.scalalogging.LazyLogging
 import kokellab.lorien.core.Roi
@@ -33,13 +34,13 @@ object RichMatrices extends LazyLogging {
 			RichMatrix(sub * 255/(quantile(1-q)-quantile(q)).toInt)
 		}
 		def quantile(q: Double): Double = DescriptiveStats.percentile(matrix.data map (_.toDouble), q)
-		def sum: Int = matrix.sum
-		def mean: Double = matrix.sum.toDouble / (matrix.rows*matrix.cols)
+		def sum: Int = breezesum(matrix)
+		def mean: Double = breezesum(matrix) / (matrix.rows*matrix.cols)
 		def +(o: RichMatrix): RichMatrix = RichMatrix(matrix - o.matrix)
 		def +(o: Int): RichMatrix = RichMatrix(matrix + o)
 		def -(o: Int): RichMatrix = RichMatrix(matrix - o)
 		def -(o: RichMatrix): RichMatrix = RichMatrix(matrix - o.matrix)
-		def crop(roi: RoisRow): RichMatrix = crop(Roi.of(roi))
+		def crop(roi: RoisRow, wellId: Int): RichMatrix = crop(Roi.of(roi, wellId))
 		def |-|(o: RichMatrix): RichMatrix = abs(matrix - o.matrix)
 		def |-|(o: Int): RichMatrix = abs(matrix - o)
 		def <>(o: RichMatrix): RichMatrix = (matrix - o.matrix) map math.signum

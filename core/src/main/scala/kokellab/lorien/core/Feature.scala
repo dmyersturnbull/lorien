@@ -1,50 +1,21 @@
 package kokellab.lorien.core
 
-import java.nio.file.Path
-import breeze.linalg._
-import kokellab.lorien.core.RichImages.RichImage
+import kokellab.lorien.core.Roi
 import kokellab.lorien.core.RichMatrices.RichMatrix
-
-import scala.reflect._
 import kokellab.lorien.core.TraversableImplicits._
-import scala.language.implicitConversions
-import scala.util.{Failure, Success, Try}
-import kokellab.utils.core._
-import kokellab.valar.core.ImageStore
-import kokellab.valar.core.Tables.{RunsRow, RoisRow}
-import kokellab.valar.core.{exec, loadDb}
 
+import scala.language.implicitConversions
+
+import scala.reflect.ClassTag
 
 /**
-  * A Feature maps a time-series of bitmap images to an output tensor of type T over a field V.
+  * A Feature maps a time-series of matrices to an output array.
   */
-sealed trait Feature[@specialized(Byte, Int, Float, Double) V, T] {
-
-	private implicit val db = loadDb()
-
-	import kokellab.valar.core.Tables._
-	import kokellab.valar.core.Tables.profile.api._
-
+sealed trait VFeature[@specialized(Byte, Short, Int, Long, Float, Double) V] {
 	def name: String
-
-	def abbreviation: String = name
-
-	def description: String
-
-	def tensorDef: TensorDef
-
-	def valarFeatureId: Byte
-
-	def apply(input: Iterator[RichMatrix]): T
-
-	def applyOn(input: Iterator[RichImage]): T = apply {
-		input map (_.reds) map (r => RichMatrix(r))
-	}
-
-	def applyOn(plateRun: RunsRow, roi: RoisRow): T = applyOn {
-		ImageStore.walk(plateRun) map (frame => RichImages.of(frame)) map (_.crop(roi))
-	}
-
+	def valarId: Byte
+	def apply(input: Iterator[RichMatrix]): Array[V]
+//	def bytes(array: Array[V]): Array[Byte]
 }
 
 
@@ -54,121 +25,26 @@ sealed trait Feature[@specialized(Byte, Int, Float, Double) V, T] {
  * F = [F_1, F_2, ..., F_n] = [F(0, 1), F(1, 2), ..., F(n-1, n)]
  * Each F_t is an element in T.
  */
-trait TimeDependentFeature[@specialized(Byte, Int, Float, Double) V, E] extends Feature[V, Iterator[E]] {
-
-	private implicit val db = loadDb()
-
-	import kokellab.valar.core.Tables._
-	import kokellab.valar.core.Tables.profile.api._
-
-	def converter: Array[E] => Array[Byte]
-
-	/**
-	  * Calculates an imports a feature.
-	  */
-	def insertOnAll(
-			run: RunsRow,
-			rois: Traversable[RoisRow],
-			lorienConfigId: Option[Short]
-	)(implicit tag: ClassTag[E]): Unit = {
-		insertOnAll(run, rois, lorienConfigId, ImageStore.walk(run), ImageStore.length(run))
-	}
-
-	/**
-	  * Calculates an imports a feature.
-	  * Uses the most recent Lorien config if it's None.
-	  */
-	def insertOnAll(
-			run: RunsRow,
-			rois: Traversable[RoisRow],
-			lorienConfigId: Option[Short],
-			frames: Iterator[Path],
-			nFrames: Int
-	)(implicit tag: ClassTag[E]): Unit = {
-		val config = lorienConfigId getOrElse {
-			exec((LorienConfigs sortBy (_.created) map (_.id) take 1).result).head
-		}
-		val results = applyOnAll(run, rois)(tag)
-		results foreach {case (roi, array) =>
-			val bytes = converter(array)
-			exec(
-				WellFeatures += WellFeaturesRow(
-					id = 0,
-					wellId = roi.wellId,
-					typeId = valarFeatureId,
-					lorienConfigId = config,
-					lorienCommitSha1 = bytesToBlob(lorienCommitHash),
-					floats = bytesToBlob(bytes),
-					sha1 = bytesToHashBlob(bytes)
-				)
-			)
-		}
-	}
-
+trait VTimeFeature[@specialized(Byte, Short, Int, Long, Float, Double) V] extends VFeature[V] {
 
 	/**
 	  * Calculates a time-dependent feature in chunks, two frames at a time.
 	  */
-	def applyOnAll(run: RunsRow, rois: Traversable[RoisRow])(implicit tag: ClassTag[E]): Map[RoisRow, Array[E]] = {
-		applyOnAll(run, rois, ImageStore.walk(run), ImageStore.length(run))
-	}
-
-	/**
-	 * Calculates a time-dependent feature in chunks, two frames at a time.
-	 */
 	def applyOnAll(
-			run: RunsRow,
-			rois: Traversable[RoisRow],
-			frames: Iterator[Path],
-			nFrames: Int
-	)(implicit tag: ClassTag[E]): Map[RoisRow, Array[E]] = {
-		val results: Map[RoisRow, Array[E]] = (rois map (roi => roi -> Array.ofDim[E](nFrames))).toMap
-		val slid = ImageStore.walk(run) map (z => FeatureUtils.tryLoad(z, run).reds) sliding 2
+			video: VideoFile, rois: Traversable[Roi]
+	)(implicit tag: ClassTag[V]): Map[Roi, Array[V]] = {
+		val nFrames = video.nFrames
+		val results: Map[Roi, Array[V]] = (rois map (roi => roi -> Array.ofDim[V](nFrames))).toMap
+		val slid = video.reader() map (f => BlazingMatrix.of(f).toBreezeMatrix) sliding 2
 		slid.zipWithIndex foreach { case (Seq(prevImage, nextImage), index) =>
-			for (roi <- rois) Try {
+			for (roi <- rois) {
 				results(roi)(index + 1) = apply( // + 1 so that index 0 is 0
 					Iterator(prevImage.crop(roi), nextImage.crop(roi))
 				).toTraversable.only(
 					excessError = seq => throw new AssertionError(s"The time-dependent feature ${getClass.getSimpleName} returned ${seq.size} != 1 calculated between two frames")
 				)
-			} match {
-				case Success(partial) => partial
-				case Failure(e) => throw new CalculationFailedException(Some(run), Some(roi), "Calculation of time-dependent feature failed for plate_run ${plateRun.id} and ROI ${roi.id}", e)
 			}
 		}
 		results
 	}
 }
-
-/**
- * A time-dependent feature vector over V of length n for a video of n frames.
- * Like all time-dependent features, these can be calculated in pieces.
- */
-trait TimeVectorFeature[@specialized(Byte, Int, Float, Double) V] extends Feature[V, Iterator[V]] with TimeDependentFeature[V, V] {
-	override def tensorDef: TensorDef = TensorDef.timeDependentVector
-}
-
-/**
- * A feature vector over V whose length is independent of the number of frames. The dimension may or may not be finite.
- */
-trait FreeVectorFeature[@specialized(Byte, Int, Float, Double) V] extends Feature[V, Iterator[V]] {
-	override def tensorDef: TensorDef = TensorDef.freeVector
-}
-
-/**
- * A feature matrix over V whose length is independent of the number of frames. Either dimension may or may not be finite.
- */
-trait FreeMatrixFeature[@specialized(Byte, Int, Float, Double) V] extends Feature[V, Iterator[Iterator[V]]] {
-	override def tensorDef: TensorDef = TensorDef.freeMatrix
-}
-
-/**
- * A time-independent feature of matricies with elements in V defined for a fixed dimension (n, m).
- * This is a concrete trait that requires each matrix to fit in memory.
- * Note that this is not a subclass of FreeMatrixFeature.
- */
-trait FiniteMatrixFeature[@specialized(Byte, Int, Float, Double) V] extends Feature[V, DenseMatrix[V]] {
-   override def tensorDef: TensorDef = TensorDef.freeMatrix
-}
-
-class CalculationFailedException(plateRun: Option[RunsRow], roi: Option[RoisRow], message: String = null, cause: Throwable = null) extends Exception(message)

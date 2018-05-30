@@ -34,6 +34,8 @@ package object core {
 	}
 
 	trait LorienException extends Exception
+	class FeatureCalculationFailedException(message: String = null, cause: Throwable = null) extends Exception(message, cause) with LorienException
+	class MissingException(message: String = null) extends Exception(message) with LorienException
 	class InconsistencyException(message: String = null) extends Exception(message) with LorienException
 	class AmbiguousException(message: String = null) extends Exception(message) with LorienException
 

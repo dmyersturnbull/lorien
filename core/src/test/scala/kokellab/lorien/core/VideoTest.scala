@@ -1,9 +1,8 @@
-package kokellab.lorien.core2
+package kokellab.lorien.core
 
 import java.nio.file.Paths
 
 import scala.collection.mutable
-import kokellab.lorien.core.RichImages
 import org.bytedeco.javacpp.avutil.AVFrame
 import org.bytedeco.javacpp.indexer.{UByteBufferIndexer, UByteRawIndexer}
 import org.bytedeco.javacv.OpenCVFrameConverter

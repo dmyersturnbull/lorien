@@ -1,13 +1,13 @@
-package kokellab.lorien.core2
+package kokellab.lorien.core
 
 import java.lang.IllegalArgumentException
-
 import breeze.linalg.DenseMatrix
-import kokellab.lorien.core2.RichMatrices.RichMatrix
+import kokellab.lorien.core.RichMatrices.RichMatrix
 import org.bytedeco.javacpp.indexer.UByteRawIndexer
 import org.bytedeco.javacv.{Frame, OpenCVFrameConverter}
 
 import scala.collection.immutable.IndexedSeq
+
 
 /**
   * Super-fast byte matrix.

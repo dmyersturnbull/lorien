@@ -4,7 +4,7 @@ description := "Lorien transforms video data into useful features."
 
 lazy val commonSettings = Seq(
 	organization := "com.github.kokellab",
-	version := "0.4.1-SNAPSHOT",
+	version := "0.5.0-SNAPSHOT",
 	scalaVersion := "2.12.6",
 	javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:all"),
 	scalacOptions ++= Seq("-unchecked", "-deprecation"),

@@ -1,7 +1,8 @@
-package simple2
+package kokellab.lorien.simple
 
-import kokellab.lorien.core2.RichMatrices.RichMatrix
-import kokellab.lorien.core2.VTimeFeature
+import kokellab.lorien.core.RichMatrices.RichMatrix
+import kokellab.lorien.core.VTimeFeature
+
 
 class MiFeature extends VTimeFeature[Float] {
 
