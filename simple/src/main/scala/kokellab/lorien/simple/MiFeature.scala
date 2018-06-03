@@ -14,7 +14,7 @@ class MiFeature extends VTimeFeature[Float] {
 		(input sliding 2) map {slid =>
 			val prev = slid.head
 			val next = slid.last
-			(next-prev).sum.toFloat
+			(next |-| prev).sum.toFloat
 		}
 	}.toArray
 
