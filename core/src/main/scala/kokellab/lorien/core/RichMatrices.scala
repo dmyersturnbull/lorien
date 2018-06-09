@@ -1,6 +1,8 @@
 package kokellab.lorien.core
 
 import scala.language.implicitConversions
+import breeze.math._
+import breeze.numerics._
 import breeze.linalg.DenseMatrix
 import breeze.linalg._
 import breeze.numerics.abs
@@ -19,14 +21,15 @@ object RichMatrices extends LazyLogging {
 	implicit def richMatrixToMatrix(richMatrix: RichMatrix): Matrix[Int] = richMatrix.matrix
 
 	implicit class RichMatrix(val matrix: DenseMatrix[Int]) {
+
 		def crop(roi: Roi): RichMatrix = {
 			if (roi.width > matrix.cols)
 				logger.warn(s"Width ${roi.width} for ROI $roi extends outside of image bounds (${matrix.cols} x ${matrix.rows})")
 			if (roi.height > matrix.rows)
 				logger.warn(s"Height ${roi.height} for ROI $roi extends outside of image bounds (${matrix.cols} x ${matrix.rows})")
 			RichMatrix(matrix(
-				roi.x0 to roi.x0 + min(roi.width, matrix.cols),
-				roi.y0 to roi.y0 + min(roi.height, matrix.rows)
+				roi.y0 to roi.y0 + min(roi.height, matrix.rows),
+				roi.x0 to roi.x0 + min(roi.width, matrix.cols)
 			))
 		}
 		def normalize(q: Double): RichMatrix = {
@@ -43,9 +46,12 @@ object RichMatrices extends LazyLogging {
 		def crop(roi: RoisRow, wellId: Int): RichMatrix = crop(Roi.of(roi, wellId))
 		def |-|(o: RichMatrix): RichMatrix = abs(matrix - o.matrix)
 		def |-|(o: Int): RichMatrix = abs(matrix - o)
-		def <>(o: RichMatrix): RichMatrix = (matrix - o.matrix) map math.signum
-		def <>(o: Int): RichMatrix = (matrix - o) map math.signum
-		def #:<(o: RichMatrix): RichMatrix = RichMatrix((matrix <:< o.matrix) map (_ compareTo false))
+		def #:<(o: Int): Int = I(matrix <:< DenseMatrix.fill(matrix.rows, matrix.cols)(o)).sum.toInt
+		def #:>(o: Int): Int = I(matrix >:> DenseMatrix.fill(matrix.rows, matrix.cols)(o)).sum.toInt
+		/*
+		def <>(o: RichMatrix): RichMatrix = signum(matrix - o.matrix)
+		def <>(o: Int): RichMatrix = signum(matrix - o)
+		def #:<(o: RichMatrix): RichMatrix = RichMatrix(I(matrix <:< o.matrix))
 		def #:<(o: Int): RichMatrix = RichMatrix((matrix <:< o) map (_ compareTo false))
 		def #:>(o: RichMatrix): RichMatrix = RichMatrix((matrix >:> o.matrix) map (_ compareTo false))
 		def #:>(o: Int): RichMatrix = RichMatrix((matrix >:> o) map (_ compareTo false))
@@ -53,5 +59,6 @@ object RichMatrices extends LazyLogging {
 		def #:<=(o: Int): RichMatrix = RichMatrix((matrix <:= o) map (_ compareTo false))
 		def #:>=(o: RichMatrix): RichMatrix = RichMatrix((matrix >:= o.matrix) map (_ compareTo false))
 		def #:>=(o: Int): RichMatrix = RichMatrix((matrix >:= o) map (_ compareTo false))
+		*/
 	}
 }
