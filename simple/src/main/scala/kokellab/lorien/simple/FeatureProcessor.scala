@@ -31,8 +31,6 @@ trait GenFeatureInserter[V] extends LazyLogging {
 			id = 0,
 			wellId = roi.wellId,
 			typeId = valar.id,
-			lorienConfigId = 1,
-			lorienCommitSha1 = bytesToBlob(lorienCommitHash),
 			floats = bytesToBlob(bytes),
 			sha1 = bytesToHashBlob(bytes)
 		))
@@ -57,10 +55,10 @@ abstract class PlainFeatureInserter[V](container: ContainerFormat, codec: Codec)
 		// TODO only 1 delete query
 		//logger.warn(s"Deleting ${previous.size} previous features")
 		rois map (_.wellId) foreach { wellId =>
-			val previous = exec((WellFeatures filter (wf => wf.wellId === wellId && wf.typeId === valar.id && wf.lorienConfigId === 1.toShort)).result)
+			val previous = exec((WellFeatures filter (wf => wf.wellId === wellId && wf.typeId === valar.id)).result)
 			if (previous.nonEmpty) {
 			assert(previous.size == 1)
-			exec(WellFeatures filter (wf => wf.wellId === wellId && wf.typeId === valar.id && wf.lorienConfigId === 1.toShort) delete)
+			exec(WellFeatures filter (wf => wf.wellId === wellId && wf.typeId === valar.id) delete)
 			}
 		}
 

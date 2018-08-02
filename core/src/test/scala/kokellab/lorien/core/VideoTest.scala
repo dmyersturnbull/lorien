@@ -22,7 +22,7 @@ class VideoTest extends PropSpec with GeneratorDrivenPropertyChecks with Matcher
 		for (two <- iter sliding 2) {
 			val prev = BlazingMatrix.of(two.head).toRichMatrix.normalize(0.01)
 			val next = BlazingMatrix.of(two.last).toRichMatrix.normalize(0.01)
-			println(((next-prev) #:> 15).sum)
+			//println(((next-prev) #:> 15).sum)
 //			println(next |-| prev)
 //			println(next.toBreezeMatrix - prev.toBreezeMatrix)
 		}

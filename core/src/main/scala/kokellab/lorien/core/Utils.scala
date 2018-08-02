@@ -19,7 +19,7 @@ object RoiUtils {
 				(roi, well) <- Rois join Wells on (_.wellId === _.id)
 				if well.runId === info.run.id
 			} yield (well, roi)
-		).result) filter (_._2.lorienConfig.isEmpty)
+		).result)
 		if (rois.size != info.plateType.nRows * info.plateType.nColumns) {
 			throw new AmbiguousException(s"Plate type ${info.plateType.id} has ${info.plateType.nRows*info.plateType.nColumns} wells, but found ${rois.size} manually defined ROIs") with LorienException
 		}
