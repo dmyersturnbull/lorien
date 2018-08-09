@@ -9,6 +9,7 @@ case class Roi(x0: Int, x1: Int, y0: Int, y1: Int, wellId: Int) {
 	lazy val height: Int = y1 - y0
 	def xyWidthHeight: (Int, Int, Int, Int) = (x0, y0, x1 - x0, y1 - y0)
 	def coordinateString = s"($x0,$x1,$y0,$y1)"
+	override def toString: String = s"Roi($wellId: ($x0,$x1,$y0,$y1))"
 }
 
 trait WellRoi extends Roi {

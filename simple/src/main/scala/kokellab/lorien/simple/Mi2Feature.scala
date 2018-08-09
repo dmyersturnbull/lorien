@@ -12,7 +12,7 @@ class Mi2Feature extends VTimeFeature[Float] {
 
 	override def apply(input: Iterator[RichMatrix]): Array[Float] = {
 		(input sliding 2) map {slid =>
-			((slid.last-slid.head) #:> 15).toFloat
+			((slid.last-slid.head) #:> 5).toFloat
 		}
 	}.toArray
 

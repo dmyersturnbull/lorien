@@ -5,6 +5,7 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.NoSuchElementException
 
 import breeze.linalg.DenseMatrix
+import com.typesafe.scalalogging.LazyLogging
 import kokellab.lorien.core.Codec.H265Crf
 import kokellab.utils.misc.{FileHasher, ValidationFailedException}
 import org.bytedeco.javacpp.avformat.AVFormatContext
@@ -51,11 +52,15 @@ object Codec {
 }
 
 
-case class VideoFile(path: Path, containerFormat: ContainerFormat, codec: Codec)  {
+case class VideoFile(path: Path, containerFormat: ContainerFormat, codec: Codec) extends LazyLogging {
 	require(Files.isRegularFile(path), s"$path is not a file")
-	require(Files.isRegularFile(Paths.get(path.toString + ".sha256")), s"No sha256 file for $path exists")
+	private val hashFile = Paths.get(path.toString + ".sha256")
+	if (!Files.isRegularFile(hashFile)) {
+		logger.warn(s"Hash file $hashFile does not exist")
+	}
 	def validates: Boolean = {
-		val sha256 = Source.fromFile(new File(path.toString + ".sha256")).mkString.trim
+		require(Files.isRegularFile(hashFile), s"No sha256 file for $path exists")
+		val sha256 = Source.fromFile(hashFile.toFile).mkString.trim
 		Try(new FileHasher("SHA-256").validate(path, sha256)) match {
 			case Success(_) => true
 			case Failure(e: ValidationFailedException) => false
@@ -68,12 +73,14 @@ case class VideoFile(path: Path, containerFormat: ContainerFormat, codec: Codec)
 	def reader(): VideoIterator = VideoIterator.from(path)
 }
 
-class VideoIterator(grabber: FFmpegFrameGrabber) extends Iterator[Frame] with Closeable {
+
+class VideoIterator(grabber: FFmpegFrameGrabber) extends Iterator[Frame] with Closeable with LazyLogging  {
 
 	grabber.start()
 	override val length: Int = grabber.getLengthInFrames
 	private var i = 0
 	override def hasNext: Boolean = i < length - 1
+	logger.info(s"Video has $length frames") // important to log because it can be wrong (see note below)
 
 	override def next(): Frame = {
 		if (i == length - 1) {
@@ -88,7 +95,14 @@ class VideoIterator(grabber: FFmpegFrameGrabber) extends Iterator[Frame] with Cl
 		 * Instead, it replaces the buffer of the old frame to reduce the frequency of GC.
 		 * We could probably exploit this, but this is simpler.
 		 */
-		grabber.grab().clone()
+		val grabbed = grabber.grab()
+		/*
+		So the issue here is:
+		Sometimes the length from grabber.getLengthInFrames is wrong by about +5 frames.
+		To work around this issue, calling code *may* be designed to expect null values.
+		Either way, it's better than a NPE here.
+		 */
+		if (grabbed == null) null else grabbed.clone()
 	}
 
 	override def close(): Unit = {

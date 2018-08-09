@@ -1,11 +1,10 @@
 package kokellab.lorien.core
 
-import kokellab.lorien.core.Roi
+import com.typesafe.scalalogging.LazyLogging
 import kokellab.lorien.core.RichMatrices.RichMatrix
 import kokellab.lorien.core.TraversableImplicits._
 
 import scala.language.implicitConversions
-
 import scala.reflect.ClassTag
 
 /**
@@ -25,7 +24,7 @@ sealed trait VFeature[@specialized(Byte, Short, Int, Long, Float, Double) V] {
  * F = [F_1, F_2, ..., F_n] = [F(0, 1), F(1, 2), ..., F(n-1, n)]
  * Each F_t is an element in T.
  */
-trait VTimeFeature[@specialized(Byte, Short, Int, Long, Float, Double) V] extends VFeature[V] {
+trait VTimeFeature[@specialized(Byte, Short, Int, Long, Float, Double) V] extends VFeature[V] with LazyLogging {
 
 	/**
 	  * Calculates a time-dependent feature in chunks, two frames at a time.
@@ -35,16 +34,20 @@ trait VTimeFeature[@specialized(Byte, Short, Int, Long, Float, Double) V] extend
 	)(implicit tag: ClassTag[V]): Map[Roi, Array[V]] = {
 		val nFrames = video.nFrames
 		val results: Map[Roi, Array[V]] = (rois map (roi => roi -> Array.ofDim[V](nFrames))).toMap
-		val slid = video.reader() map (f => BlazingMatrix.of(f).toBreezeMatrix) sliding 2
-		slid.zipWithIndex foreach { case (Seq(prevImage, nextImage), index) =>
+		val slid = video.reader() takeWhile (_ != null) map (f => BlazingMatrix.of(f).toBreezeMatrix) sliding 2
+		var i = 0
+		slid foreach { case Seq(prevImage, nextImage) =>
 			for (roi <- rois) {
-				results(roi)(index + 1) = apply( // + 1 so that index 0 is 0
+				results(roi)(i + 1) = apply( // + 1 so that index 0 is 0
 					Iterator(prevImage.crop(roi), nextImage.crop(roi))
 				).toTraversable.only(
 					excessError = seq => throw new AssertionError(s"The time-dependent feature ${getClass.getSimpleName} returned ${seq.size} != 1 calculated between two frames")
 				)
 			}
+			i += 1
 		}
+		if (i == nFrames) logger.info(s"Expected $nFrames and got $i")
+		else logger.warn(s"Expected $nFrames but got $i")
 		results
 	}
 }

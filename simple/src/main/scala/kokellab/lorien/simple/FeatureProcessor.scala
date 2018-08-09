@@ -27,13 +27,14 @@ trait GenFeatureInserter[V] extends LazyLogging {
 	def apply(run: RunsRow, videoFile: Path): Unit
 
 	protected def insert(bytes: Traversable[Byte], roi: Roi): Unit = {
-		exec(insertQuery += WellFeaturesRow(
-			id = 0,
-			wellId = roi.wellId,
-			typeId = valar.id,
-			floats = bytesToBlob(bytes),
-			sha1 = bytesToHashBlob(bytes)
-		))
+		// TODO
+//		exec(insertQuery += WellFeaturesRow(
+//			id = 0,
+//			wellId = roi.wellId,
+//			typeId = valar.id,
+//			floats = bytesToBlob(bytes),
+//			sha1 = bytesToHashBlob(bytes)
+//		))
 	}
 }
 
@@ -78,6 +79,7 @@ abstract class PlainFeatureInserter[V](container: ContainerFormat, codec: Codec)
 		logger.info(s"Finished inserting ${valar.name} for run ${run.tag}.")
 	}
 }
+
 
 class MiFeatureInserter(container: ContainerFormat, codec: Codec) extends PlainFeatureInserter[Float](container, codec) {
 	private implicit val db = loadDb()
