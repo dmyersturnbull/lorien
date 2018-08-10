@@ -1,6 +1,8 @@
 package kokellab.lorien.simple
 
 import java.nio.file.{Path, Paths}
+import java.time.{LocalDateTime, ZonedDateTime}
+import java.time.temporal.ChronoUnit
 
 import scala.reflect.ClassTag
 import breeze.linalg.DenseVector
@@ -27,7 +29,6 @@ trait GenFeatureInserter[V] extends LazyLogging {
 	def apply(run: RunsRow, videoFile: Path): Unit
 
 	protected def insert(bytes: Traversable[Byte], roi: Roi): Unit = {
-		// TODO
 //		exec(insertQuery += WellFeaturesRow(
 //			id = 0,
 //			wellId = roi.wellId,
@@ -58,10 +59,13 @@ abstract class PlainFeatureInserter[V](container: ContainerFormat, codec: Codec)
 		rois map (_.wellId) foreach { wellId =>
 			val previous = exec((WellFeatures filter (wf => wf.wellId === wellId && wf.typeId === valar.id)).result)
 			if (previous.nonEmpty) {
-			assert(previous.size == 1)
-			exec(WellFeatures filter (wf => wf.wellId === wellId && wf.typeId === valar.id) delete)
+				logger.debug(s"Deleting previous ${valar.name} on ${run.tag}")
+				assert(previous.size == 1)
+				exec(WellFeatures filter (wf => wf.wellId === wellId && wf.typeId === valar.id) delete)
 			}
 		}
+
+		val started = LocalDateTime.now()
 
 		val results: Map[Roi, Array[V]] = Try {
 			val video = VideoFile(videoFile, container, codec)
@@ -70,10 +74,12 @@ abstract class PlainFeatureInserter[V](container: ContainerFormat, codec: Codec)
 			case Success(array) => array
 			case Failure(e) => throw new FeatureCalculationFailedException(s"${valar.name} calculation on run ${run.tag} failed", e)
 		}
+		val finishedCalc = LocalDateTime.now()
+		logger.info(s"Calculating ${valar.name} on ${run.tag} took ${ChronoUnit.SECONDS.between(started, finishedCalc)} seconds from $started to $finishedCalc")
 
 		for (((roi, floats), i) <- results.zipWithIndex) {
 			insert(converter(floats), roi)
-			if (i % 12 == 0) logger.info(s"Processed ${valar.name} for well $i.")
+			if (i % 12 == 0) logger.info(s"Processed ${valar.name} for well $i of ${valar.name} on ${run.tag}.")
 		}
 
 		logger.info(s"Finished inserting ${valar.name} for run ${run.tag}.")
@@ -94,8 +100,8 @@ class Mi2FeatureInserter(container: ContainerFormat, codec: Codec) extends Plain
 	private implicit val db = loadDb()
 	import kokellab.valar.core.Tables._
 	import kokellab.valar.core.Tables.profile.api._
-	override val valar: FeaturesRow = exec((Features filter (_.name === "MI2")).result).head
-	override val lorien = new Mi2Feature()
+	override val valar: FeaturesRow = exec((Features filter (_.name === "MI2(5)")).result).head
+	override val lorien = new Mi2Feature(5)
 	override def converter(arr: Array[Float]): Array[Byte] = floatsToBytes(arr).toArray
 }
 
@@ -109,7 +115,7 @@ object FeatureProcessor {
 	def main(args: Array[String]): Unit = {
 		val feature = args(0) match {
 			case "MI" => new MiFeatureInserter(ContainerFormat.Mkv, Codec.H265Crf(15))
-			case "MI2" => new Mi2FeatureInserter(ContainerFormat.Mkv, Codec.H265Crf(15))
+			case "MI2(5)" => new Mi2FeatureInserter(ContainerFormat.Mkv, Codec.H265Crf(15))
 			case _ => throw new IllegalArgumentException(s"Unrecognized feature ${args(0)}")
 		}
 		val run: Try[RunsRow] = Try(args(1).toInt) map (r => exec((Runs filter (_.id === r)).result).head)

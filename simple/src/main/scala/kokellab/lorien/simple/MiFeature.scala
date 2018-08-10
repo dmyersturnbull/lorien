@@ -6,9 +6,7 @@ import kokellab.lorien.core.VTimeFeature
 
 class MiFeature extends VTimeFeature[Float] {
 
-	override def name: String = "MI"
-
-	override def valarId: Byte = 1
+	override val name: String = "MI"
 
 	override def apply(input: Iterator[RichMatrix]): Array[Float] = {
 		(input sliding 2) map {slid =>

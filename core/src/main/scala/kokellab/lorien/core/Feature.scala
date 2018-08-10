@@ -3,6 +3,7 @@ package kokellab.lorien.core
 import com.typesafe.scalalogging.LazyLogging
 import kokellab.lorien.core.RichMatrices.RichMatrix
 import kokellab.lorien.core.TraversableImplicits._
+import kokellab.valar.core.{exec, loadDb}
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -11,8 +12,12 @@ import scala.reflect.ClassTag
   * A Feature maps a time-series of matrices to an output array.
   */
 sealed trait VFeature[@specialized(Byte, Short, Int, Long, Float, Double) V] {
-	def name: String
-	def valarId: Byte
+	private implicit val db = loadDb()
+	import kokellab.valar.core.Tables._
+	import kokellab.valar.core.Tables.profile.api._
+	val name: String
+	final lazy val valarObj: FeaturesRow = exec((Features filter (_.name === name)).result).headOption getOrElse (throw new IllegalArgumentException(s"There is no feature with name $name"))
+	final lazy val valarId: Byte = valarObj.id
 	def apply(input: Iterator[RichMatrix]): Array[V]
 //	def bytes(array: Array[V]): Array[Byte]
 }
@@ -39,7 +44,7 @@ trait VTimeFeature[@specialized(Byte, Short, Int, Long, Float, Double) V] extend
 		slid foreach { case Seq(prevImage, nextImage) =>
 			for (roi <- rois) {
 				results(roi)(i + 1) = apply( // + 1 so that index 0 is 0
-					Iterator(prevImage.crop(roi), nextImage.crop(roi))
+					Iterator(prevImage `//` roi, nextImage `//` roi)
 				).toTraversable.only(
 					excessError = seq => throw new AssertionError(s"The time-dependent feature ${getClass.getSimpleName} returned ${seq.size} != 1 calculated between two frames")
 				)
