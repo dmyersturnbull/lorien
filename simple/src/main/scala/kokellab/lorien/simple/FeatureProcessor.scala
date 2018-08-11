@@ -29,13 +29,13 @@ trait GenFeatureInserter[V] extends LazyLogging {
 	def apply(run: RunsRow, videoFile: Path): Unit
 
 	protected def insert(bytes: Traversable[Byte], roi: Roi): Unit = {
-//		exec(insertQuery += WellFeaturesRow(
-//			id = 0,
-//			wellId = roi.wellId,
-//			typeId = valar.id,
-//			floats = bytesToBlob(bytes),
-//			sha1 = bytesToHashBlob(bytes)
-//		))
+		exec(insertQuery += WellFeaturesRow(
+			id = 0,
+			wellId = roi.wellId,
+			typeId = valar.id,
+			floats = bytesToBlob(bytes),
+			sha1 = bytesToHashBlob(bytes)
+		))
 	}
 }
 
@@ -96,12 +96,39 @@ class MiFeatureInserter(container: ContainerFormat, codec: Codec) extends PlainF
 	override def converter(arr: Array[Float]): Array[Byte] = floatsToBytes(arr).toArray
 }
 
-class Mi2FeatureInserter(container: ContainerFormat, codec: Codec) extends PlainFeatureInserter[Float](container, codec) {
+class CdInserter(container: ContainerFormat, codec: Codec, tau: Int) extends PlainFeatureInserter[Float](container, codec) {
 	private implicit val db = loadDb()
 	import kokellab.valar.core.Tables._
 	import kokellab.valar.core.Tables.profile.api._
-	override val valar: FeaturesRow = exec((Features filter (_.name === "MI2(5)")).result).head
-	override val lorien = new Mi2Feature(5)
+	override val valar: FeaturesRow = exec((Features filter (_.name === s"cd($tau)")).result).head
+	override val lorien = new CdFeature(tau)
+	override def converter(arr: Array[Float]): Array[Byte] = floatsToBytes(arr).toArray
+}
+
+class TdInserter(container: ContainerFormat, codec: Codec, tau: Int) extends PlainFeatureInserter[Float](container, codec) {
+	private implicit val db = loadDb()
+	import kokellab.valar.core.Tables._
+	import kokellab.valar.core.Tables.profile.api._
+	override val valar: FeaturesRow = exec((Features filter (_.name === s"td($tau)")).result).head
+	override val lorien = new TdFeature(tau)
+	override def converter(arr: Array[Float]): Array[Byte] = floatsToBytes(arr).toArray
+}
+
+class CdplusInserter(container: ContainerFormat, codec: Codec, tau: Int) extends PlainFeatureInserter[Float](container, codec) {
+	private implicit val db = loadDb()
+	import kokellab.valar.core.Tables._
+	import kokellab.valar.core.Tables.profile.api._
+	override val valar: FeaturesRow = exec((Features filter (_.name === s"cd+($tau)")).result).head
+	override val lorien = new CdplusFeature(tau)
+	override def converter(arr: Array[Float]): Array[Byte] = floatsToBytes(arr).toArray
+}
+
+class TdplusInserter(container: ContainerFormat, codec: Codec, tau: Int) extends PlainFeatureInserter[Float](container, codec) {
+	private implicit val db = loadDb()
+	import kokellab.valar.core.Tables._
+	import kokellab.valar.core.Tables.profile.api._
+	override val valar: FeaturesRow = exec((Features filter (_.name === s"td+($tau)")).result).head
+	override val lorien = new TdplusFeature(tau)
 	override def converter(arr: Array[Float]): Array[Byte] = floatsToBytes(arr).toArray
 }
 
@@ -115,7 +142,10 @@ object FeatureProcessor {
 	def main(args: Array[String]): Unit = {
 		val feature = args(0) match {
 			case "MI" => new MiFeatureInserter(ContainerFormat.Mkv, Codec.H265Crf(15))
-			case "MI2(5)" => new Mi2FeatureInserter(ContainerFormat.Mkv, Codec.H265Crf(15))
+			case "cd(10)" => new CdInserter(ContainerFormat.Mkv, Codec.H265Crf(15), 10)
+			case "td(10)" => new TdInserter(ContainerFormat.Mkv, Codec.H265Crf(15), 10)
+			case "cd+(10)" => new CdplusInserter(ContainerFormat.Mkv, Codec.H265Crf(15), 10)
+			case "td+(10)" => new TdplusInserter(ContainerFormat.Mkv, Codec.H265Crf(15), 10)
 			case _ => throw new IllegalArgumentException(s"Unrecognized feature ${args(0)}")
 		}
 		val run: Try[RunsRow] = Try(args(1).toInt) map (r => exec((Runs filter (_.id === r)).result).head)

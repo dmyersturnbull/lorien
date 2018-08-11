@@ -36,13 +36,18 @@ object RichMatrices extends LazyLogging {
 		def crop(roi: RoisRow, wellId: Int): RichMatrix = crop(Roi.of(roi, wellId))
 		def `//`(roi: Roi): RichMatrix = crop(roi)
 
-		def normalize(q: Double): RichMatrix = {
+		def normalize255(q: Double): RichMatrix = {
 			val sub: DenseMatrix[Int] = matrix - quantile(q).toInt
 			RichMatrix(sub * 255/(quantile(1-q)-quantile(q)).toInt)
+		}
+		def normalize32b(q: Double): RichMatrix = {
+			val sub: DenseMatrix[Int] = matrix - quantile(q).toInt
+			RichMatrix(sub * (2^32)/(quantile(1-q)-quantile(q)).toInt)
 		}
 
 		def quantile(q: Double): Double = DescriptiveStats.percentile(matrix.data map (_.toDouble), q)
 		def sum: Int = breezesum(matrix)
+		def size: Int = matrix.size
 		def mean: Double = breezesum(matrix) / (matrix.rows*matrix.cols)
 
 		def +(o: RichMatrix): RichMatrix = RichMatrix(matrix - o.matrix)
@@ -55,11 +60,23 @@ object RichMatrices extends LazyLogging {
 
 		def #<(o: Int): Int = breezesum(I(matrix <:< DenseMatrix.fill(matrix.rows, matrix.cols)(o))).toInt
 		def #>(o: Int): Int = breezesum(I(matrix >:> DenseMatrix.fill(matrix.rows, matrix.cols)(o))).toInt
-		def #>=(o: Int): Int = breezesum(I(matrix >:= DenseMatrix.fill(matrix.rows, matrix.cols)(o))).toInt
-		def #<=(o: Int): Int = breezesum(I(matrix <:= DenseMatrix.fill(matrix.rows, matrix.cols)(o))).toInt
+		def #>=(o: Int): Int = breezesum(I(matrix >:> DenseMatrix.fill(matrix.rows, matrix.cols)(o-1))).toInt
+		def #<=(o: Int): Int = breezesum(I(matrix <:< DenseMatrix.fill(matrix.rows, matrix.cols)(o+1))).toInt
+
+		def #<(o: RichMatrix): Int = breezesum(I(matrix <:< o.matrix)).toInt
+		def #>(o: RichMatrix): Int = breezesum(I(matrix >:> o.matrix)).toInt
+		def #>=(o: RichMatrix): Int = breezesum(I(matrix >:> o.matrix)).toInt
+		def #<=(o: RichMatrix): Int = breezesum(I(matrix <:< o.matrix)).toInt
 
 		def |<(o: Int): Int = breezesum(breezemax(matrix, o)) - o*matrix.size
+		def |<=(o: Int): Int = breezesum(breezemax(matrix, o+1)) - (o+1)*matrix.size
 		def |>(o: Int): Int = breezesum(breezemin(matrix, o)) + o*matrix.size
+		def |>=(o: Int): Int = breezesum(breezemin(matrix, o-1)) + (o-1)*matrix.size
+
+		def |<(o: RichMatrix): Int = breezesum(breezemax(matrix, o.matrix)) - breezesum(o.matrix)
+		def |<=(o: RichMatrix): Int = breezesum(breezemax(matrix, o.matrix+1)) - breezesum(o.matrix+1)
+		def |>(o: RichMatrix): Int = breezesum(breezemin(matrix, o.matrix)) + breezesum(o.matrix)
+		def |>=(o: RichMatrix): Int = breezesum(breezemin(matrix, o.matrix-1)) + breezesum(o.matrix-1)
 
 		def +<>(o: RichMatrix): Int = breezesum(signum(matrix - o.matrix)).toInt
 		def +<>(o: Int): Int = breezesum(signum(matrix - o)).toInt
